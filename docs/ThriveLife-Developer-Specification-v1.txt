@@ -1,0 +1,754 @@
+
+ThriveLife App
+Developer Specification and Build Guide
+Based on Live Recharged by Joel Pukalo
+Version 1.0  ·  July 2026
+Prepared for solo developer build
+CONFIDENTIAL — NOT FOR DISTRIBUTION
+
+Table of Contents
+
+
+(Update this field in Word after opening: right-click → Update Field)
+
+Part 1: What You Are Building
+1.1 Product in One Paragraph
+ThriveLife is a real-time capacity-navigation app based on the book Live Recharged. It helps people notice when their energy is running low, identify which part of their life is most depleted, and take the smallest effective action to recharge — rather than adding more pressure. It is not a habit tracker, mood diary, diagnostic tool, or motivational platform. Its distinctive value is translating the book's framework into a daily personal dashboard.
+1.2 Core Promise
+Understand what is draining you and take the next right step to recharge.
+Every feature in the app should pass this test: does it help the user notice, match, or respond? If it only measures, tracks, or educates without leading to action, it does not belong in Version 1.
+1.3 The Book's Central Reframe
+The manuscript's foundational idea — which must guide every screen, every result message, and every notification — is this:
+What appears to be a motivation or discipline problem may actually be a capacity problem. Low power calls for a pit stop, not greater self-pressure.
+This means: no shame-based language, no streak-loss penalties, no red alerts for ordinary fluctuation, no rewards for over-engagement. The app should help users leave the app and re-enter their lives with greater clarity.
+1.4 Audience
+Version 1 targets adults: parents, caregivers, professionals, business owners, helping professionals, leaders, and people experiencing ordinary overload, depletion, or burnout risk. Future versions may add faith-based content, teen accounts, workplace teams, and coaching pathways — none of those belong in this build.
+1.5 What This Document Covers
+This is a standalone specification. It incorporates and critically revises the original product outline (the App Plan), resolving architectural gaps, scoring logic, safety requirements, and build sequencing. Where this document conflicts with any earlier plan, this document is current. Section 12 lists every conflict and the reasoning.
+CRITICAL: Every numeric threshold in this document is provisional expert judgment — not validated against real user data. All thresholds must be stored in an admin-editable configuration table, never hard-coded, so they can be recalibrated after pilot testing without a code release.
+
+Part 2: The Conceptual Model
+You do not need to read the book to build this app. You do need to understand these seven concepts, because they are the domain language the entire data model uses.
+2.1 DRAIN
+DRAIN is the state that develops when life's demands exceed current capacity. The pattern includes demands running high, avoidance, and ineffective numbing. The book presents DRAIN as a dashboard warning light, not a character failure. Relief may briefly reduce pressure, but recharge restores usable capacity. The word DRAIN appears throughout the app as a recognizable signal.
+2.2 Seven Life Batteries
+The book organizes human capacity into seven systems called Life Batteries. These are the core domain objects of the entire app.
+
+Battery
+What It Covers
+Think of It As
+Daily Rhythms
+Defaults, anchors, transitions, start/stop structure
+The operating system of the day
+Physical
+Sleep, fuel, movement, body regulation, recovery
+Recovery capacity between demands
+Mental
+Attention, decisions, information filtering, reflection
+Visibility and steering
+Emotional
+Noticing emotion, regulating intensity, recovering, values alignment
+The ability to respond rather than react
+Relational
+Connection, trust, support, boundaries, communication, repair
+The relationship capacity system
+Spiritual
+Inner compass, presence, hope, wonder, meaning, direction
+True north and grounding
+Work & Daily Purpose
+Priorities, limits, direction, off-duty time, purpose
+Where values meet the calendar
+
+The batteries are distinct but connected. Strain in one can pull down the others. Targeted support for one battery is more effective than global effort across all seven.
+2.3 Three Dimensions Per Battery
+Every battery is measured on three separate dimensions. These are never averaged into a single number.
+
+Dimension
+What It Measures
+Direction
+Capacity
+What the battery currently enables the person to do
+Higher = more capacity
+Strain
+Warning signals that the battery is depleted or overloaded
+Higher = more strain
+Recharge Skill
+Ability to notice depletion and respond proportionally
+Higher = more skill
+2.4 Dashboard Signals
+Signals appear through body, brain, and behavior. The user's job is to read the signal without turning it into a judgment about character. The app should mirror this — display information, not verdicts.
+2.5 Driving Modes
+Three modes define the user's current operating context and control how the app responds.
+
+Mode
+Meaning
+App Behavior
+Green
+Capacity generally steady
+May offer upgrades; full recharge menu; up to 10-minute actions
+Yellow
+Several warning lights present
+Plan B surfaced equally with Plan A; no new goals; ceiling at 5 minutes
+Red
+Capacity substantially strained
+Plan B is default; new goals suppressed; support action prompted; ceiling at 2 minutes
+2.6 Recharge Hierarchy
+Every recharge recommendation maps to one of four time levels. The book defines two minutes as the minimum effective dose and prioritizes completion over duration.
+
+Level
+Duration
+When Used
+60-Second Reset
+~1 minute
+Active strain, low capacity, immediate interruption, Red/Yellow mode
+2-Minute Pit Stop
+~2 minutes
+The minimum effective recharge — the default
+5-Minute Recharge
+~5 minutes
+Standard support action
+10-Minute Recharge
+~10 minutes
+Fuller reset when capacity permits, Green mode
+2.7 Plan A and Plan B
+Every selected recharge has two versions. Plan A is the normal-day version. Plan B is the hard-day minimum: completable in about two minutes, requires no high motivation, must be concrete, must count as complete success. The book frames Plan B as durability, not failure. The app must never treat Plan B as a lesser outcome.
+
+Part 3: The Assessment System
+CRITICAL: This is a four-instrument system, not a single questionnaire. The four instruments share constructs but use different timeframes and response scales. They must be built as one coordinated architecture or they will produce contradictory dashboard states.
+3.1 The Four Instruments
+
+Instrument
+Items
+Timeframe
+Response Scale
+Completion Time
+Frequency
+DRAIN Check
+~10
+Right now
+Yes / Somewhat / No (stored as 2/1/0)
+30-60 sec
+On demand
+Battery Scan
+7 + 1 follow-up
+Right now
+Low / Steady / Full / Unsure (enum)
+30-60 sec
+Daily or on demand
+Full Assessment
+56 (8 × 7 batteries)
+Past two weeks
+0-4 frequency + N/A (integer or null)
+8-12 min
+Min 14 days apart
+Weekly Mode Check
+1
+This week
+Green / Yellow / Red / Unsure (enum)
+10 sec
+Weekly
+3.2 What Each Instrument Owns
+Every dashboard element has exactly one authoritative source. No element is computed by blending instruments. When the authoritative source is stale or absent, the dashboard shows that element as unavailable with a prompt, never a substituted value.
+
+Dashboard Element
+Authoritative Source
+Stale After
+Seven battery states (Low / Steady / etc.)
+Full Assessment
+90 days
+Overcharge flag
+Full Assessment (cross-battery)
+90 days
+Tune-Up battery recommendation
+Full Assessment
+90 days
+Today's recommended battery
+Battery Scan (fallback: Full Assessment)
+18 hours
+Today's recharge action
+Battery Scan + Driving Mode
+18 hours
+Driving Mode (Green/Yellow/Red)
+Weekly Mode Check (user-declared)
+7 days
+Immediate intervention trigger
+DRAIN Check
+Session only
+Progress trend line
+Daily Check-In
+Continuous
+Baseline comparison points
+Full Assessment
+Per administration
+DEV NOTE: The DRAIN Check never writes to battery state. The Battery Scan never overwrites Full Assessment states. Daily Check-In data and Full Assessment data are never plotted on the same chart axis.
+3.3 Construct Registry — The Key Architectural Decision
+The DRAIN Check items measure the same underlying constructs as the Full Assessment's Strain items, just at a different timeframe (right now versus past two weeks). If these are developed independently, they will diverge in wording and produce contradictory readings.
+Required model: every item belongs to a construct. A construct may have multiple timeframe variants. When Joel edits a construct definition in the admin panel, both timeframe variants surface together.
+
+Object
+Key Fields
+Purpose
+Construct
+construct_id, battery_id, dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
+Single source of truth for what is being measured
+Item
+item_id, construct_id (FK), instrument_id (FK), timeframe (moment|two_week), wording, response_scale_id, scoring_direction, version, active
+Each wording variant of a construct for a specific instrument
+3.4 Response Scales — Do Not Normalize
+The four instruments use three different response formats measuring different timeframes. These are deliberately not normalized to a common numeric scale. Normalizing them invites the code to average across them, which is the failure this section exists to prevent.
+'Unsure' and 'Not applicable' are never scored as a middle value. Store as null, count separately. A Battery Scan answer of 'Unsure' prompts one disambiguating follow-up ('Would you say it's closer to Low or Steady?') and is otherwise treated as missing.
+3.5 Conflict Display Rule
+When today's Battery Scan disagrees with the standing Full Assessment state, display both. Never merge them.
+The battery ring shows the Full Assessment state (the two-week pattern). A marker on the ring shows today's Scan reading. Where they diverge by more than one level, the interface names it: "Your Physical battery usually reads Steady. Today you marked it Low."
+That divergence is meaningful information for the user. Reconciling it into a single averaged number destroys it.
+3.6 Full Assessment Response Scale
+The Full Assessment uses a five-point frequency scale with a two-week recall window.
+
+Value
+Label
+Stored As
+0
+Not at all
+Integer 0
+1
+Rarely
+Integer 1
+2
+Sometimes
+Integer 2
+3
+Often
+Integer 3
+4
+Almost always
+Integer 4
+—
+Not applicable
+null (never scored as 0 or midpoint)
+Display both the number and the word label. The two-week window is stated in the instructions shown to the user: "Thinking about the past two weeks, how often has each statement been true for you?"
+DEV NOTE: This scale is provisional and will be tested in cognitive interviews. Build the response scale as a configurable object, not hard-coded labels. Joel may revise the labels, add anchors, or adjust the number of points after testing.
+
+Part 4: Scoring Logic
+4.1 Three Scores Per Battery — Never Combined
+Each battery produces three independent scores from the Full Assessment. These are reported separately and never averaged into a single battery number.
+
+Score
+Computed As
+Direction
+Capacity
+Mean of completed Capacity items (3 items)
+Higher = more capacity
+Strain
+Mean of completed Strain items (3 items)
+Higher = more strain
+Recharge
+Mean of completed Recharge items (2 items)
+Higher = more skill
+No reverse-scoring. Strain items are scored in their own direction and reported as strain. Every item is worded so that a higher number means more of the thing the item names. No negatively-worded items within any scale.
+4.2 Missing Data Rules
+A dimension score (Capacity, Strain, or Recharge) is computed if at least 2 of 3 items are answered (or 2 of 2 for Recharge). Below that minimum, the dimension is stored as 'insufficient_data' — not zero, not imputed.
+A battery state is computed only when all three dimension scores are available.
+A full dashboard is computed if at least 5 of 7 batteries have states. Below that, show partial results and name which batteries are incomplete.
+N/A responses count as missing for scoring and are tracked separately for pilot analysis. Any item drawing over 15% N/A in the pilot is a candidate for rewriting.
+4.3 Dimension Thresholds
+CRITICAL: All values in this table are provisional and must live in the scoring_thresholds config table. They will be recalibrated after Stage 1 pilot data.
+
+Dimension
+Low
+Moderate
+Strong
+Capacity
+< 2.0
+2.0 – 2.99
+≥ 3.0
+Recharge Skill
+< 1.5
+1.5 – 2.49
+≥ 2.5
+
+Dimension
+Low
+Rising
+Elevated
+Strain
+< 1.5
+1.5 – 2.49
+≥ 2.5
+4.4 Battery State Matrix
+Four states — not five. Overcharged is not among them (see Section 5). The Recharge score influences the state only in the ambiguous middle band. Elsewhere it drives the recommendation, not the state — a person with low capacity and strong recharge skills still has low capacity; what differs is what the app offers them.
+
+Capacity
+Strain
+Recharge
+→ State
+Strong
+Low
+any
+Well Charged
+Strong
+Rising or Elevated
+any
+Strained but Functioning
+Moderate
+Low
+any
+Steady
+Moderate
+Rising
+Moderate or Strong
+Steady
+Moderate
+Rising
+Low
+Strained but Functioning
+Moderate
+Elevated
+any
+Strained but Functioning
+Low
+Low
+any
+Steady
+Low
+Rising
+any
+Low
+Low
+Elevated
+any
+Low
+
+Part 5: The Overcharge Effect
+5.1 Why Overcharge Is a Flag, Not a State
+Overcharge is a relationship between batteries — one area (usually Work and Daily Purpose) is being sustained by drawing energy from others. It cannot be derived from a single battery's own three scores, so it cannot belong in the state enum alongside Low, Steady, and Well Charged. If you put it in the same enum, the state machine literally cannot produce it from its own inputs.
+Model it as a boolean flag with a contributing-battery list, computed after all seven states are resolved.
+5.2 Provisional Detection Rule
+Set overcharge_flag = true when ALL of the following hold:
+
+Condition
+Rule
+Why It Matters
+1
+Work & Daily Purpose Capacity ≥ 3.0
+Output is strong
+2
+At least 2 of {Physical, Relational, Spiritual, Daily Rhythms} have Capacity < 2.0
+Other batteries are depleted
+3
+Mean Strain across all 7 batteries ≥ 2.0
+System-wide strain is present
+4
+At least one Work strain item about difficulty stopping scores ≥ 3
+Cannot disengage from the overcharged area
+Condition 4 is what separates overcharge from healthy high engagement. Someone with strong work capacity, low strain, and no difficulty stopping is doing well — telling them otherwise is wrong. This condition is the one most in need of pilot validation.
+5.3 Message Constraints
+Approved pattern: "Your results may suggest that one area is being sustained by drawing heavily from other batteries."
+Never use: burnout, at risk, unhealthy, warning, workaholic, or any second-person character attribution.
+The flag never appears as a red alert. It appears as an observation with a reflection prompt and a recommended starting battery from the depleted set. The user can dismiss it; dismissal is stored and the flag is not re-raised until the next Full Assessment.
+
+Part 6: Driving Mode
+6.1 User-Declared, Not Computed
+Driving Mode is set by the user through the Weekly Mode Check. It is not derived from assessment scores. The self-report takes seconds and reflects today's actual road. A value derived from a two-week-old assessment will contradict what the user knows to be true, and the manuscript presents mode as something the driver reads, not something the car computes.
+6.2 Advisory Suggested Mode
+The system computes a suggested mode and offers it as a default the user can accept or override. It never sets the field silently.
+Signal-count rule: a battery is 'showing a signal' when at least 2 of its 3 Strain items score ≥ 3 (Often or Almost always).
+
+Batteries Showing Signals
+Suggested Mode
+0 – 1
+Green
+2 – 3
+Yellow
+4 or more
+Red
+CRITICAL: This threshold is the single most fragile number in the specification. Log the full distribution of signal counts in Stage 1. If more than roughly a third of pilot users compute to Red, the threshold is wrong, not the users. Recalibrate before beta.
+6.3 Mode Effects on Recommendations
+
+Mode
+Max Recharge Duration
+Behavior
+Green
+10 minutes
+May offer one upgrade or new habit
+Yellow
+5 minutes
+Plan B surfaced equally with Plan A; no new goals
+Red
+2 minutes
+Plan B is default; new goals suppressed; support action prompted
+
+Part 7: User Flows
+7.1 Onboarding Sequence
+The full assessment stays in onboarding but moves behind first value. The user should experience a successful recharge before being asked to commit to 9 minutes of questions.
+
+Step
+Screen
+What Happens
+1
+Welcome
+Product introduction — one sentence
+2
+Explanation
+Wellness tool disclaimer, consent, not a diagnosis, batteries rise and fall, low ≠ failure
+3
+Context Questions
+Current season, major transitions, caregiving, health, schedule, energy focus — personalization only, never scored into batteries
+4
+Battery Scan
+7 batteries rated Low/Steady/Full/Unsure — 45 seconds
+5
+Provisional Dashboard
+One recommended battery + one 2-minute Pit Stop
+6
+First Recharge
+User completes the Pit Stop — this is where the product proves itself
+7
+Full Assessment Offer
+"Your seven-battery dashboard, driving mode, and tune-up starting point — about 9 minutes" — user can decline
+8
+Full Dashboard + Plan
+Seven battery states, driving mode, overcharge check, recharge plan setup
+Users who decline at Step 7 are re-prompted at Day 3 and Day 7. The Tune-Up feature requires a completed Full Assessment and says so.
+DEV NOTE: Do not implement adaptive or partial assessment where the Battery Scan selects which batteries get deep-assessed. It produces non-random missing data that cannot be corrected in analysis. Revisit only after validation.
+7.2 Daily Check-In
+Under 30 seconds. Four questions:
+
+#
+Question
+Response Options
+1
+What mode are you in today?
+Green / Yellow / Red / Unsure
+2
+Which battery needs the most support?
+Select one of seven
+3
+What recharge version fits today?
+2 min / 5 min / 10 min / Plan B
+4
+Did you complete it?
+Yes / Partly / Not today / I changed the plan
+Optional: "What helped or drained you today?" — short text or voice note. No classification is run on this text (see Safety, Section 9).
+7.3 Re-administration of the Full Assessment
+User-initiated, inside an interval structure:
+Hard floor: 14 days since the last Full Assessment. The instrument's recall window is two weeks; shorter intervals produce overlapping, non-independent measurements.
+Blocking copy: "Your last full assessment was [N] days ago — it looks back over two weeks, so give it a little more time. Your daily check-ins are tracking in the meantime."
+Prompted at Tune-Up review points (30 / 60 / 90 days) and at 90 days for anyone who has not retaken. Store interval_days with every result. Two results fewer than 14 days apart are never rendered as a trend.
+7.4 Displaying Change Over Time
+Full Assessment results: discrete snapshots (baseline versus current), not a continuous line.
+Daily Check-In data: continuous line, on a separate chart.
+Never merge these two data sources on one axis.
+CRITICAL: Until pilot data establishes a standard error of measurement, show direction and state labels, never numeric deltas. "Your Physical battery has moved from Low to Steady" is supportable. "+0.7" is not, because nothing yet tells you whether 0.7 is real movement or noise.
+Assessment version is stored with every result. Results from different item versions are never compared numerically.
+7.5 Restart Rail
+When a user misses a planned recharge, the app does not announce a lost streak. Instead:
+Message: "Nothing is lost. Practice the return."
+Buttons: Do 2 minutes now / Use Plan B / Schedule my next return.
+Track: time between miss and return, number of successful returns, Plan B usage, four-out-of-seven consistency. Do not track: shame-based streak loss, failed-day counts, or rankings against other users.
+7.6 One Battery Tune-Up
+Longer-term growth focused on one battery for 30, 60, or 90 days. Requires a completed Full Assessment.
+
+Step
+Action
+1
+Identify the recurring warning light
+2
+Select the battery that would reduce the most friction if supported
+3
+Choose one daily action that works on a hard day
+4
+Choose one support action (prepare environment, tell a trusted person, use a visible cue, reduce friction, schedule rest, move phone, prepare food/water, block time)
+5
+Select interval: 30 / 60 / 90 days
+6
+Define the win: what would become a little easier?
+At the end of the interval, the review asks: What became easier? Which warning light decreased? What friction remained? Was Plan B small enough? Which support action helped? Should the user continue, deepen, simplify, switch battery, or enter maintenance mode?
+
+Part 8: Dashboard Logic
+The dashboard never simply averages all seven scores. It identifies five things:
+
+Element
+Rule
+Most depleted battery
+Lowest Capacity + highest Strain + lowest Recharge — the combined worst reading
+Most stabilizing starting point
+Physical or Daily Rhythms when severely low; otherwise the lowest battery; user can override
+Strongest support
+The battery showing stable capacity and effective recharge skills
+Overcharge risk
+See Section 5 — the cross-battery flag
+Today's recharge
+One action only, matched to the focus battery and current driving mode
+8.1 Recommendation Engine Input Priority
+
+Priority
+Source
+Condition
+1
+DRAIN Check result
+If completed this session
+2
+Battery Scan
+If under 18 hours old
+3
+Full Assessment battery states
+If under 90 days old
+4
+Prompt for Battery Scan
+Otherwise
+8.2 Recommendation Mapping
+Every recommendation is mapped by: battery, specific signal, current driving mode, available time, location, energy level, user preferences, health limitations, and previous effectiveness. Each recommendation must include both Plan A (normal-day) and Plan B (hard-day minimum).
+DEV NOTE: Build the recommendation engine as a rule-based lookup table (battery × signal × mode × time → action), not as hardcoded conditional logic. Joel must be able to add, edit, and reorder recommendations in the admin panel without code changes.
+
+Part 9: Safety, Escalation, and Privacy
+CRITICAL: This section requires review by Joel in his registered capacity and legal review before beta. Do not ship without sign-off.
+9.1 What the App Is Not
+ThriveLife is a wellness and self-reflection tool. It does not provide diagnosis, treatment, or emergency support. This statement must be visible during onboarding and accessible from the help menu at all times.
+9.2 No Risk-Screening Items
+The assessment contains no items about self-harm, suicidality, substance dependence, or abuse. This is deliberate. Screening for risk creates a duty to respond to it, and an app without a monitored clinical pathway cannot discharge that duty. The correct posture is a wellness tool with an always-available support pathway, not a screener with an unstaffed alarm. Document this rationale.
+9.3 Always-Available Support Layer
+A persistent, non-alarming support link in the help menu and at the foot of every results screen, listing regional crisis and mental health resources. Available regardless of any score. Never triggered by a score. Never conditional. Never framed as a response to what the user answered.
+9.4 Tier 1 — Sustained Low Pattern
+Condition: 4 or more batteries at state Low across two consecutive Full Assessments at least 14 days apart.
+Response: a non-alarming card on the results screen:
+"Several areas have been reading low for a while now. ThriveLife is built for ordinary depletion, and some things need more support than an app can offer. Talking with a doctor or a counselor is a reasonable next step, and it is not a sign that anything has gone wrong."
+Includes a 'find support' link and a dismiss control. Does not block the app. Does not repeat within 30 days.
+9.5 Tier 2 — Physical Symptom Persistence
+Condition: Physical Capacity < 1.5 sustained across two assessments.
+Response: the book's own guidance about persistent physical symptoms warranting medical attention, in the book's voice.
+9.6 Free-Text Fields
+The optional journal and 'what drained you today' field: no automated classification. Do not run NLP, sentiment analysis, or keyword detection on free text to identify risk. The always-available support layer is the response. Building a detector that is wrong in either direction is worse than not building one.
+9.7 Age Gate
+Self-declared 18+ at signup. Teen accounts are deferred to a future version and must remain so — a minor-facing wellness assessment carries consent and duty considerations this architecture does not address.
+9.8 AI Rules
+AI features should be added after the rule-based system works. When added, AI may: rewrite recommendations in the user's preferred tone, summarize weekly patterns, offer reflection questions, suggest Plan B alternatives, help choose between recharge options, convert a journal entry into a brief reflection, suggest a steering sentence, and help simplify an oversized plan.
+AI must not: diagnose, claim to detect trauma or mental illness, assess crisis risk, make medical recommendations, decide who accesses user data, pressure users to disclose, infer hidden emotional states, or replace the rule-based scoring model.
+9.9 Privacy Requirements
+Private by default. Assessment answers, scores, battery status, driving mode, journal entries, recharge completion, support needs, AI conversations, and tune-up progress remain private unless the user actively shares them.
+Required user controls: export data, delete data, delete account, disable notifications, disable AI features, control journal retention, choose whether anonymous usage data is collected, choose what may be shared with a future team.
+DEV NOTE: Alberta PIPA and PIPEDA apply to repeated wellness data. Privacy review is required before beta. The handling model for stored assessment responses — retention period, encryption at rest, cross-border storage — must be specified by legal counsel.
+
+Part 10: Core Data Objects
+These extend the objects in the original product outline with the architectural decisions made in this document.
+
+Object
+Key Fields
+User
+user_id, profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified (boolean)
+Battery
+battery_id, name, definition, icon, display_order, book_chapter_ref
+Construct
+construct_id, battery_id (FK), dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
+Instrument
+instrument_id, name (drain_check|battery_scan|full_assessment|weekly_mode_check), description, timeframe
+Item
+item_id, construct_id (FK), instrument_id (FK), timeframe (moment|two_week), wording, response_scale_id, scoring_direction, version, active
+Response Scale
+scale_id, name, labels (JSON array), stored_type (integer|enum), min_value, max_value
+Assessment Session
+session_id, user_id (FK), instrument_id (FK), started_at, completed_at, version, interval_since_previous
+Assessment Response
+response_id, session_id (FK), item_id (FK), answer (nullable integer or enum), skipped (boolean), timestamp
+Battery Result
+result_id, session_id (FK), battery_id (FK), capacity_score, strain_score, recharge_score, battery_state (enum), computed_at
+Overcharge Flag
+flag_id, session_id (FK), is_flagged (boolean), contributing_batteries (JSON array), dismissed (boolean), dismissed_at
+Driving Mode
+mode_id, user_id (FK), declared_mode (green|yellow|red|unsure), suggested_mode, set_at, source (weekly_check|onboarding)
+Signal
+signal_id, battery_id (FK), channel (body|brain|behavior), description, severity, related_recharge_ids
+Recharge Action
+action_id, battery_id (FK), signal_id (FK), duration_tier (60s|2min|5min|10min), mode_suitability (JSON), instructions, plan_a_text, plan_b_text, accessibility_variations, health_caution, chapter_source
+Recharge Plan
+plan_id, user_id (FK), battery_id (FK), warning_light, plan_a_action_id (FK), plan_b_action_id (FK), cue, support_action, start_date, review_date
+Daily Check-In
+checkin_id, user_id (FK), mode, battery_id (FK), recharge_selected, completion (yes|partly|not_today|changed), note, date
+Tune-Up
+tuneup_id, user_id (FK), battery_id (FK), interval (30|60|90), warning_light, daily_action_id (FK), support_action, start_date, review_outcomes (JSON)
+Scoring Threshold
+threshold_id, dimension, level_name, min_value, max_value, description — ADMIN EDITABLE
+Escalation Event
+event_id, user_id (FK), tier (1|2), triggered_at, message_shown, dismissed (boolean)
+
+Part 11: Build Phases
+11.1 Phase 1 — Content Architecture (Joel's responsibility)
+Before development begins, Joel delivers: final terminology dictionary, chapter-to-app content map, seven battery construct definitions, candidate item bank with construct IDs, recharge action library, result interpretation copy, safety copy, and notification copy. The developer should not begin scoring or recommendation logic without this content.
+11.2 Phase 2 — Core Data Model and Admin
+Build the database schema (Section 10), the admin content editor, and the scoring_thresholds config table. Verify that Joel can create, edit, and version assessment items, constructs, recharge actions, result wording, and scoring thresholds without code changes. This is the foundation everything else depends on.
+11.3 Phase 3 — Assessment Engine
+Build all four instruments: DRAIN Check, Battery Scan, Full Assessment, Weekly Mode Check. Implement the scoring logic from Section 4, the battery state matrix, the overcharge flag from Section 5, and the driving mode system from Section 6. Verify that each instrument writes only to its authorized dashboard elements (Section 3.2).
+11.4 Phase 4 — Dashboard and Recommendations
+Build the dashboard with the five elements from Section 8, the recommendation engine as a rule-based lookup table (not hardcoded conditionals), Plan A/Plan B system, and the conflict display rule from Section 3.5.
+11.5 Phase 5 — Daily Loop
+Build the Daily Check-In, Restart Rail, and progress tracking. Implement the two-chart separation (Full Assessment snapshots versus Daily Check-In continuous line). Build the Tune-Up setup and review flows.
+11.6 Phase 6 — Onboarding
+Build the onboarding sequence from Section 7.1. This comes after the core engine works, not before — you need a working Battery Scan, Pit Stop, and Full Assessment before the onboarding flow can connect to them.
+11.7 Phase 7 — Safety and Privacy
+Implement the always-available support layer, escalation tiers, age gate, data export, data deletion, and privacy controls. This must be complete before any beta user sees the product.
+11.8 Phase 8 — Pilot Instrumentation
+Before beta launch, add telemetry: per-item response timestamp, per-screen dwell time, abandonment point, N/A and skip flags, device type, assessment version, interval since previous administration. This data drives every threshold recalibration in this document.
+DEV NOTE: Phases 2-5 can overlap. Phase 7 (safety) must be complete before beta. Phase 8 (telemetry) must be complete before beta. Phase 6 (onboarding) can be a simple linear flow initially and refined after user testing.
+11.9 MVP Feature Checklist
+
+Required for V1
+Deferred
+User account, consent, and age verification
+Team feed and direct messaging
+Context questions (personalization only)
+Voice notes
+Full Life Battery Assessment
+Leader dashboard
+Seven-Battery Dashboard
+Complex badges or gamification
+DRAIN Check
+Public profiles
+Battery Scan
+Peer matching
+Weekly Mode Check
+AI emotional analysis
+Rule-based recommendation engine
+Group mood analytics
+2-5-10 Recharge menus with Plan A/B
+Subscriptions
+Daily Check-In
+Workplace reporting
+Restart Rail
+Teen accounts
+One Battery Tune-Up
+Christian content pathway
+Progress history (two separate charts)
+
+Book-based learning modules
+
+Optional reminders
+
+Data export and deletion
+
+Admin content editor
+
+Always-available support link
+
+Escalation tiers
+
+Pilot telemetry
+
+
+Part 12: What This Document Changes From the Original Plan
+If you receive any earlier document that conflicts with the decisions below, this document is current.
+
+Original Plan
+This Document
+Reason
+Full assessment at onboarding Screen 4, before any value
+Moved behind first Battery Scan and Pit Stop
+Longest artifact met before the useful one; high abandonment risk
+Driving Mode derived from assessment signal count
+User-declared via Weekly Mode Check; derived value is advisory only
+Two sources writing one field contradict each other; stale derivation overrides lived experience
+Manuscript rule of 2-3/4+ signals applied to individual items
+Applied to batteries showing signals (2 of 3 strain items ≥ 3)
+Item-level counting pushes most adults to Red, making the mode system meaningless
+Overcharged as fifth battery state alongside Low, Steady, etc.
+Cross-battery boolean flag with contributing-battery list
+Overcharge is a relationship between batteries, not derivable from one battery's own scores
+Five battery states with no numeric boundaries
+Four states with a provisional threshold matrix
+State machine was unimplementable without boundaries
+Battery trends shown over time (unspecified data source)
+Two separate charts: Assessment snapshots + Daily Check-In line
+Mixing snapshot and continuous data implies precision neither has
+Disclaimers only for safety
+Three-tier escalation protocol added
+The plan required a protocol that did not exist
+Assessment Item as a flat object
+Construct and Instrument as separate objects with foreign keys
+Prevents duplicate constructs across four instruments; enables coordinated editing
+Implicit assumption that scores could be compared across versions
+Assessment version stored with every result; cross-version numeric comparison blocked
+Item changes invalidate prior calibration
+
+Part 13: Open Risks and Decisions Needed
+
+#
+Risk
+Owner
+Decision / Action Needed
+1
+Every threshold is uncalibrated expert judgment
+Joel
+Config-driven build now; recalibrate after Stage 1 pilot
+2
+Signal-count rule may push most users to Red
+Joel
+Log distribution in Stage 1; recalibrate before beta
+3
+Overcharge condition 4 may misfire on healthy engagement
+Joel
+Validate in cognitive interviews
+4
+Escalation protocol not yet professionally reviewed
+Joel
+College and legal review before beta
+5
+Item wording blocked on manuscript extraction
+Joel
+Deliver content package before Phase 3 begins
+6
+Seven-factor structure unverified at pilot scale (N=50-150)
+Joel
+Accept as deferred; do not claim validation
+7
+Recharge dimension may need cross-battery structure rather than 7×2 items
+Joel
+Decide during item writing; may affect DB schema
+8
+Alberta PIPA / PIPEDA handling of repeated wellness data unspecified
+Joel
+Privacy review before beta
+9
+Recharge action library does not yet exist
+Joel
+Required before recommendation engine build
+10
+No brand/design system specified for the app interface
+Joel + Dev
+Design system needed before UI build
+
+Part 14: What This Document Does Not Cover
+The following are required before or during development but are not part of this specification:
+
+Missing Piece
+Who Delivers It
+Needed Before
+Assessment item wording (all 56+ items)
+Joel (manuscript extraction)
+Phase 3
+Construct definitions and battery boundaries
+Joel (with psychometric review)
+Phase 3
+Recharge action library (all tiers, all batteries)
+Joel
+Phase 4
+Result interpretation copy
+Joel
+Phase 4
+Notification copy
+Joel
+Phase 5
+Screen-level visual design
+Designer / Joel
+Phase 4
+Privacy policy and terms of use
+Legal counsel
+Phase 7
+Expert content-validity review
+Three independent experts
+After Phase 3, before public launch
+Cognitive interview results
+Joel + 10-15 participants
+After Phase 3, before public launch
+Pilot data and threshold recalibration
+Joel + 50-150 beta users
+Before public launch
+
+This document is a living specification. As each missing piece is delivered, it should be incorporated and the version number updated.

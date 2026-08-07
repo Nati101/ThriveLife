@@ -1,0 +1,421 @@
+# ThriveLife — Detailed Task List
+
+Actionable build plan derived from **Developer Specification v1.0 (July 2026)**.  
+Another developer should be able to execute from this list without re-reading the full spec.
+
+**Related:** [SPEC-SUMMARY.md](./SPEC-SUMMARY.md) · [QUESTIONS.md](./QUESTIONS.md) · [Full plaintext spec](./ThriveLife-Developer-Specification-v1.txt)
+
+**Legend:** `- [ ]` = todo · Owner hints: **Dev**, **Joel**, **Legal**, **Design**
+
+---
+
+## Phase 0 — Project foundation (Dev)
+
+Scaffolding, tooling, and decisions that unblock all later phases. Spec does not prescribe stack — confirm answers in QUESTIONS.md before locking choices.
+
+### 0.1 Repository & engineering hygiene
+- [ ] Confirm GitHub org/owner, visibility (private recommended), and branch protection
+- [ ] Add CONTRIBUTING / PR template if collaborating
+- [ ] Choose and document monorepo vs multi-repo layout
+- [ ] Set up CI (lint, typecheck, unit tests) on PR
+- [ ] Set up environments: `local` / `staging` / `production`
+- [ ] Secrets management (no secrets in git); `.env.example` only
+- [ ] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
+
+### 0.2 Stack & platform decisions (confirm with stakeholders)
+- [ ] Decide primary client(s): iOS / Android / responsive web / all
+- [ ] Decide framework (e.g. Expo/React Native, Flutter, Next.js PWA)
+- [ ] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS)
+- [ ] Decide database (Postgres strongly implied by relational Section 10 model)
+- [ ] Decide auth provider (email magic link, OAuth, Cognito, Clerk, Auth0, etc.)
+- [ ] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations)
+- [ ] Decide admin UI approach (same app role-gated vs separate admin app)
+
+### 0.3 Initial app shell (no product logic yet)
+- [ ] Bootstrap client app with navigation skeleton
+- [ ] Bootstrap API / backend project with health check
+- [ ] Bootstrap DB migrations tooling
+- [ ] Shared types / OpenAPI or tRPC contract between client and API
+- [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
+
+### 0.4 Brand & UX prerequisites (**Joel + Design** — blocks polished UI)
+- [ ] Agree interim visual system for internal builds (can be utilitarian)
+- [ ] Receive brand/design system before Phase 4 UI polish
+- [ ] Tone guide: no shame language, no streak penalties, no red alerts for ordinary fluctuation
+
+### 0.5 Content delivery gate (**Joel** — blocks Phase 3 scoring & Phase 4 recommendations)
+- [ ] Receive terminology dictionary
+- [ ] Receive chapter-to-app content map
+- [ ] Receive seven battery construct definitions + boundaries
+- [ ] Receive candidate item bank with construct IDs (DRAIN + Full Assessment + Scan wording)
+- [ ] Receive recharge action library (all tiers × batteries, Plan A/B text)
+- [ ] Receive result interpretation copy
+- [ ] Receive safety / escalation / disclaimer copy
+- [ ] Receive notification copy (before Phase 5 reminders)
+- [ ] **Dev:** seed placeholder/fixture content so engine can be unit-tested before final copy lands
+
+---
+
+## Phase 1 — Content architecture handoff (**Joel**, Dev supports)
+
+Spec §11.1. Developer should **not** ship real scoring/recommendation with invented clinical/wellness wording.
+
+- [ ] Define content package format (JSON/CSV/CMS import) jointly
+- [ ] Import pipeline: batteries → constructs → instruments → items → response scales
+- [ ] Versioning rules for items (new version invalidates cross-version numeric compare)
+- [ ] Content review checklist before enabling in staging
+- [ ] Track open risks from spec §13 that depend on content (item wording, recharge library, recharge dimension structure)
+
+---
+
+## Phase 2 — Core data model & admin (Dev) — foundation
+
+Spec §§10–11.2. Everything else depends on this.
+
+### 2.1 Database schema (Section 10)
+- [ ] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified
+- [ ] `Battery` — name, definition, icon, display_order, book_chapter_ref (seed 7 batteries)
+- [ ] `Construct` — battery_id, dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
+- [ ] `Instrument` — drain_check | battery_scan | full_assessment | weekly_mode_check
+- [ ] `Item` — construct_id, instrument_id, timeframe (moment|two_week), wording, response_scale_id, scoring_direction, version, active
+- [ ] `ResponseScale` — labels JSON, stored_type, min/max — **configurable, not hard-coded**
+- [ ] `AssessmentSession` — user, instrument, started/completed, version, interval_since_previous
+- [ ] `AssessmentResponse` — answer nullable, skipped, per-item timestamp
+- [ ] `BatteryResult` — capacity/strain/recharge scores, battery_state enum, computed_at
+- [ ] `OverchargeFlag` — is_flagged, contributing_batteries JSON, dismissed, dismissed_at
+- [ ] `DrivingMode` — declared_mode, suggested_mode, set_at, source
+- [ ] `Signal` — battery, channel (body|brain|behavior), description, severity, related_recharge_ids
+- [ ] `RechargeAction` — duration_tier, mode_suitability, Plan A/B, accessibility, health_caution, chapter_source
+- [ ] `RechargePlan` — warning_light, plan A/B FKs, cue, support_action, dates
+- [ ] `DailyCheckIn` — mode, battery, recharge_selected, completion enum, note, date
+- [ ] `TuneUp` — interval 30|60|90, outcomes JSON, etc.
+- [ ] `ScoringThreshold` — **admin-editable**; seed provisional values from §4.3
+- [ ] `EscalationEvent` — tier 1|2, message_shown, dismissed
+- [ ] Indexes for user+date queries, session lookups, stale-after windows
+- [ ] Soft-delete / retention fields as privacy model requires (confirm with Legal)
+
+### 2.2 Domain invariants (enforce in DB + service layer)
+- [ ] Never average Capacity/Strain/Recharge into one battery score
+- [ ] Unsure / N/A stored as null — never midpoint
+- [ ] DRAIN Check never writes battery state
+- [ ] Battery Scan never overwrites Full Assessment states
+- [ ] Daily Check-In and Full Assessment never share a chart axis (data model supports separation)
+- [ ] Assessment version stamped on every result session
+
+### 2.3 Admin content editor
+- [ ] Auth for admin role (Joel)
+- [ ] CRUD batteries, constructs, instruments, items (with versioning UX)
+- [ ] When editing a construct, surface **all timeframe variants** together
+- [ ] CRUD response scales and labels
+- [ ] CRUD scoring thresholds (with audit log of changes)
+- [ ] CRUD recharge actions, signals, recommendation lookup rows
+- [ ] CRUD result interpretation / safety / notification copy
+- [ ] Preview mode for instruments
+- [ ] Activate/deactivate items without deleting historical responses
+- [ ] Acceptance: Joel can change thresholds and copy **without a code release**
+
+### 2.4 Seed & fixtures
+- [ ] Seed seven batteries + provisional thresholds (§4.3, §4.4 matrix as code rules reading config)
+- [ ] Fixture instruments/items for automated tests
+- [ ] Migration rollback tested
+
+### 2.5 Phase 2 tests
+- [ ] Schema migration tests
+- [ ] Admin permission tests
+- [ ] Threshold read path used by scoring service (no magic numbers in scorer)
+
+---
+
+## Phase 3 — Assessment engine (Dev)
+
+Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures until then.
+
+### 3.1 Shared assessment session framework
+- [ ] Start/resume/complete session API
+- [ ] Persist per-item responses with timestamps
+- [ ] Support skip / N/A / Unsure
+- [ ] Abandonment detection hooks (dwell time → Phase 8)
+- [ ] Interval calculation since previous Full Assessment
+
+### 3.2 DRAIN Check (~10 items, Yes/Somewhat/No → 2/1/0)
+- [ ] Instrument UI + API
+- [ ] Session-only intervention trigger wiring (does **not** update battery states)
+- [ ] Maps to recommendation priority 1 when completed this session (§8.1)
+
+### 3.3 Battery Scan (7 + 1 follow-up)
+- [ ] Rate each battery Low / Steady / Full / Unsure
+- [ ] Unsure → one disambiguating follow-up (“closer to Low or Steady?”); else missing
+- [ ] Writes “today’s recommended battery” authority (stale after 18 hours)
+- [ ] Does not overwrite Full Assessment states
+
+### 3.4 Full Assessment (56 items: 8×7 — Capacity×3, Strain×3, Recharge×2)
+- [ ] 0–4 frequency + N/A; show number + word label
+- [ ] Instructions: past two weeks recall window
+- [ ] Hard floor: block re-admin &lt; 14 days with prescribed copy (§7.3)
+- [ ] Store `interval_days` / `interval_since_previous`
+- [ ] Scoring (§4):
+  - [ ] Mean of completed items per dimension
+  - [ ] Dimension score only if ≥2 of 3 (or 2 of 2 Recharge); else `insufficient_data`
+  - [ ] Battery state only if all three dimensions available
+  - [ ] Partial dashboard if ≥5 of 7 batteries have states; name incomplete batteries
+  - [ ] Track N/A rates for pilot (flag items &gt;15% N/A)
+- [ ] Apply **ScoringThreshold** config → Low/Moderate/Strong (Capacity, Recharge) and Low/Rising/Elevated (Strain)
+- [ ] Apply **Battery State Matrix** (§4.4) → Well Charged | Steady | Strained but Functioning | Low
+- [ ] Persist `BatteryResult` rows + assessment version
+
+### 3.5 Overcharge flag (§5)
+- [ ] Compute after all seven states resolved
+- [ ] Conditions 1–4 from config where possible (thresholds admin-editable)
+- [ ] Store contributing batteries list
+- [ ] Messaging constraints (approved pattern; banned words)
+- [ ] Dismissible; do not re-raise until next Full Assessment
+- [ ] Not a red alert; observation + reflection + starting battery from depleted set
+
+### 3.6 Driving Mode (§6)
+- [ ] Weekly Mode Check instrument (Green/Yellow/Red/Unsure)
+- [ ] User-declared mode is authoritative (stale after 7 days)
+- [ ] Compute **suggested** mode via signal-count rule (advisory only — never silent write)
+  - [ ] Battery “showing signal” = ≥2 of 3 Strain items ≥ 3
+  - [ ] 0–1 → Green, 2–3 → Yellow, 4+ → Red
+- [ ] Log full signal-count distribution for pilot recalibration
+- [ ] Mode effects: duration ceilings and Plan A/B behavior (§6.3)
+
+### 3.7 Authority & staleness service (§3.2)
+- [ ] Central resolver: for each dashboard element, return value | stale | missing + prompt
+- [ ] Unit tests proving no cross-instrument writes
+
+### 3.8 Phase 3 tests (critical)
+- [ ] Table-driven tests for battery state matrix (all rows in §4.4)
+- [ ] Missing-data / insufficient_data cases
+- [ ] Overcharge true/false edge cases (esp. healthy high engagement vs condition 4)
+- [ ] Suggested mode signal-count boundaries
+- [ ] 14-day Full Assessment lockout
+- [ ] Version stamp + no cross-version numeric compare helpers
+
+---
+
+## Phase 4 — Dashboard & recommendations (Dev + Design)
+
+Spec §§3.5, 8, 11.4. Needs recharge library + result copy from Joel; design system for polish.
+
+### 4.1 Dashboard five elements (§8)
+- [ ] Most depleted battery (lowest Capacity + highest Strain + lowest Recharge)
+- [ ] Most stabilizing starting point (Physical or Daily Rhythms if severely low; else lowest; user override)
+- [ ] Strongest support (stable capacity + effective recharge)
+- [ ] Overcharge risk display (§5.3)
+- [ ] Today’s recharge — **one action only**, matched to focus battery + mode
+
+### 4.2 Conflict display rule (§3.5)
+- [ ] Battery ring = Full Assessment state
+- [ ] Marker = today’s Scan
+- [ ] If diverge by &gt;1 level, show explicit copy naming both
+- [ ] Never merge/average Scan + Full Assessment
+
+### 4.3 Recommendation engine (§8.1–8.2)
+- [ ] Input priority: DRAIN (session) → Battery Scan (&lt;18h) → Full Assessment (&lt;90d) → prompt Scan
+- [ ] **Rule-based lookup table** (battery × signal × mode × time → action) — admin-editable, not hard-coded conditionals
+- [ ] Respect mode duration ceilings (Green 10m / Yellow 5m / Red 2m)
+- [ ] Always include Plan A and Plan B; Red defaults Plan B; never treat Plan B as lesser
+- [ ] Factor preferences, health limitations, prior effectiveness when data exists
+- [ ] Accessibility variations + health cautions on actions
+
+### 4.4 Recharge UX
+- [ ] 60s / 2 / 5 / 10 minute menus filtered by mode
+- [ ] Completion experience that encourages leaving the app (product goal)
+- [ ] Provisional dashboard for Scan-only users (onboarding Step 5)
+
+### 4.5 Progress display constraints (§7.4) — shared with Phase 5
+- [ ] Full Assessment = discrete snapshots only
+- [ ] No numeric deltas until SEM validated — state/direction labels only
+- [ ] Block comparing different item versions numerically
+
+### 4.6 Phase 4 tests
+- [ ] Priority fallback chain
+- [ ] Mode ceiling filtering
+- [ ] Conflict display copy triggers
+- [ ] Lookup table resolution with admin reordering
+
+---
+
+## Phase 5 — Daily loop (Dev)
+
+Spec §§7.2, 7.5–7.6, 11.5.
+
+### 5.1 Daily Check-In (&lt;30 seconds)
+- [ ] Q1: mode today (G/Y/R/Unsure)
+- [ ] Q2: which battery needs most support
+- [ ] Q3: recharge version (2 / 5 / 10 / Plan B)
+- [ ] Q4: completion (Yes / Partly / Not today / I changed the plan)
+- [ ] Optional note: text only in V1 (voice notes deferred); **no NLP / classification**
+- [ ] Writes continuous progress series (separate from assessments)
+
+### 5.2 Restart Rail (§7.5)
+- [ ] On miss: “Nothing is lost. Practice the return.”
+- [ ] Actions: Do 2 minutes now / Use Plan B / Schedule next return
+- [ ] Track: time to return, successful returns, Plan B usage, 4-of-7 consistency
+- [ ] Do **not** track: streak loss, failed-day counts, social rankings
+
+### 5.3 Two-chart progress history
+- [ ] Chart A: Full Assessment snapshots (baseline vs current)
+- [ ] Chart B: Daily Check-In continuous line
+- [ ] Never merge on one axis
+- [ ] Labels only (no unjustified numeric deltas)
+
+### 5.4 One Battery Tune-Up (§7.6)
+- [ ] Gate: requires completed Full Assessment (clear messaging if missing)
+- [ ] Setup steps 1–6 (warning light → battery → daily action → support action → interval → win definition)
+- [ ] Support action options: prepare environment, tell trusted person, visible cue, reduce friction, schedule rest, move phone, prepare food/water, block time
+- [ ] Review at 30/60/90: prescribed reflection questions; continue/deepen/simplify/switch/maintenance
+- [ ] Prompt Full Assessment at Tune-Up review points and at 90 days if not retaken
+
+### 5.5 Optional reminders
+- [ ] Notification preferences (opt-in)
+- [ ] Use Joel’s notification copy; tone-safe
+- [ ] Respect disable-notifications privacy control
+
+### 5.6 Phase 5 tests
+- [ ] Check-in persistence and timezone/date boundaries
+- [ ] Restart Rail metrics exclude forbidden streak semantics
+- [ ] Tune-Up gating and review outcomes schema
+
+---
+
+## Phase 6 — Onboarding (Dev)
+
+Spec §7.1, §11.6. Build **after** Scan, Pit Stop, and Full Assessment work.
+
+- [ ] Step 1: Welcome — one-sentence product intro
+- [ ] Step 2: Explanation — wellness disclaimer, consent, not a diagnosis, batteries rise/fall, low ≠ failure
+- [ ] Step 3: Context questions (season, transitions, caregiving, health, schedule, energy focus) — **personalization only, never scored**
+- [ ] Step 4: Battery Scan
+- [ ] Step 5: Provisional dashboard (one battery + 2-min Pit Stop)
+- [ ] Step 6: First recharge completion (prove product value)
+- [ ] Step 7: Full Assessment offer (~9 min); decline allowed
+- [ ] Step 8: Full dashboard + plan (if assessment taken)
+- [ ] Decline path: re-prompt Day 3 and Day 7
+- [ ] Age gate 18+ at signup (also Phase 7)
+- [ ] **Do not** implement adaptive/partial deep assessment based on Scan (§7.1 DEV NOTE)
+- [ ] Can ship linear MVP flow first; refine after user testing
+
+---
+
+## Phase 7 — Safety & privacy (Dev + Legal + Joel) — **beta gate**
+
+Spec §9, §11.7. Must be complete before any beta user.
+
+### 7.1 Product posture
+- [ ] Persistent “not diagnosis / not emergency support” disclaimer (onboarding + help)
+- [ ] Confirm assessment item bank has **no** self-harm/suicidality/substance/abuse screening items
+- [ ] Document rationale (wellness tool + always-available support, not unstaffed screener)
+
+### 7.2 Always-available support layer
+- [ ] Persistent link in help menu + foot of every results screen
+- [ ] Regional crisis / mental health resources list (Canada/Alberta first — confirm regions)
+- [ ] Never score-triggered; never conditional; never framed as response to answers
+
+### 7.3 Escalation tiers (copy professionally reviewed before beta)
+- [ ] Tier 1: ≥4 batteries Low across two consecutive Full Assessments ≥14 days apart → non-alarming card + find support + dismiss; no app block; no repeat within 30 days
+- [ ] Tier 2: Physical Capacity &lt; 1.5 sustained across two assessments → book-voice medical attention guidance
+- [ ] Persist `EscalationEvent`; respect dismissal windows
+- [ ] College + legal sign-off tracked as release checklist item
+
+### 7.4 Free text
+- [ ] No automated classification / NLP / keyword risk detection
+
+### 7.5 Age gate
+- [ ] Self-declared 18+ at signup; block under-18
+- [ ] No teen account paths in V1
+
+### 7.6 Privacy controls (§9.9)
+- [ ] Private by default for assessments, scores, mode, journal, completion, support needs, tune-ups, future AI chats
+- [ ] Export data
+- [ ] Delete data / delete account
+- [ ] Disable notifications
+- [ ] Disable AI features (when AI exists)
+- [ ] Journal retention control
+- [ ] Opt-in anonymous usage analytics
+- [ ] Future team-share controls (stub OK if teams deferred)
+- [ ] Privacy policy + Terms (Legal) linked in-app
+- [ ] Encryption at rest, retention, cross-border storage per Legal counsel
+- [ ] Alberta PIPA / PIPEDA review before beta
+
+### 7.7 AI rules (if any AI in V1 — prefer defer)
+- [ ] Only after rule-based system works
+- [ ] Allow-list vs deny-list from §9.8 enforced in prompts/product copy
+- [ ] AI must not replace rule-based scoring
+
+---
+
+## Phase 8 — Pilot instrumentation (Dev) — **beta gate**
+
+Spec §11.8.
+
+- [ ] Per-item response timestamp
+- [ ] Per-screen dwell time
+- [ ] Abandonment point capture
+- [ ] N/A and skip flags aggregated
+- [ ] Device type
+- [ ] Assessment version
+- [ ] Interval since previous administration
+- [ ] Signal-count distribution logging (mode suggestion fragility)
+- [ ] Threshold change audit + ability to recalibrate without deploy
+- [ ] Privacy-respecting analytics consent
+- [ ] Internal dashboard or export for Joel’s Stage 1 analysis (N≈50–150)
+
+---
+
+## Phase 9 — Auth, accounts & DevOps polish
+
+Scattered across MVP but needed for real users.
+
+- [ ] Sign up / sign in / sign out / password reset or magic link
+- [ ] Consent capture + versioned consent records
+- [ ] Timezone handling for daily/weekly prompts
+- [ ] Push/email notification infrastructure (optional reminders)
+- [ ] Staging data hygiene (no real PII in shared staging without controls)
+- [ ] Backup/restore runbooks
+- [ ] Rate limiting / abuse basics
+- [ ] Accessibility pass (WCAG-oriented; recharge accessibility_variations)
+- [ ] App store / web launch checklist (when platform chosen)
+- [ ] Monitoring & on-call basics for beta
+
+---
+
+## Phase 10 — Validation & launch readiness (**Joel**-led, Dev supports)
+
+From Part 14 — not “features” but release blockers for public launch.
+
+- [ ] Expert content-validity review (3 independent experts) after Phase 3
+- [ ] Cognitive interviews (10–15) after Phase 3
+- [ ] Stage 1 pilot + threshold recalibration before public launch
+- [ ] Escalation protocol professional review complete
+- [ ] Privacy/legal documents live
+- [ ] No unvalidated psychometric claims in marketing copy
+- [ ] Confirm deferred features remain out of product and marketing
+
+---
+
+## Cross-cutting quality bar (all phases)
+
+- [ ] Copy review against central reframe (capacity, not discipline/shame)
+- [ ] Unit + integration tests for scoring and authority boundaries
+- [ ] Snapshot/UI tests for critical flows (Scan, Pit Stop, Full Assessment, Check-In)
+- [ ] Load/perf smoke for Full Assessment session (56 items)
+- [ ] Security review before beta (authz on admin + user data isolation)
+- [ ] Keep all numeric thresholds in `ScoringThreshold` / config — grep CI to forbid hard-coded bounds in scorer
+
+---
+
+## Suggested execution order for a solo developer
+
+1. Phase 0 decisions + shell  
+2. Phase 2 schema + admin + fixture content  
+3. Phase 3 engine with fixtures (parallel Joel content)  
+4. Phase 4 dashboard + lookup recommendations (needs recharge library)  
+5. Phase 5 daily loop  
+6. Phase 6 onboarding wired to real flows  
+7. Phase 7 + 8 before any beta invite  
+8. Phase 9 hardening throughout  
+9. Phase 10 validation with Joel  
+
+**Overlap allowed:** Phases 2–5. **Hard gates:** Joel content before real scoring/recs; Safety + telemetry before beta.
