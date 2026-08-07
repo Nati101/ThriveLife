@@ -1,0 +1,117 @@
+import {
+  FIXTURE_BATTERIES,
+  CHECK_IN_COMPLETION_LABELS,
+  DRIVING_MODES,
+  RECHARGE_DURATION_TIERS,
+} from "@thrivelife/shared";
+import { PageHeader } from "@/components/page-header";
+
+export default function CheckInPage() {
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Daily loop"
+        title="Daily Check-In"
+        description="Target under 30 seconds. Four questions + optional note. Notes are text-only in V1 — no NLP or risk classification."
+      />
+
+      <form className="max-w-lg space-y-6 rounded-2xl border border-border bg-card/90 p-5">
+        <fieldset>
+          <legend className="text-sm font-medium text-foreground">
+            1. What mode are you in today?
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[...DRIVING_MODES, "unsure"].map((mode) => (
+              <label
+                key={mode}
+                className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm capitalize has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value={mode}
+                  className="sr-only"
+                  disabled
+                />
+                {mode}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="text-sm font-medium text-foreground">
+            2. Which battery needs the most support?
+          </legend>
+          <select
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            disabled
+            defaultValue=""
+          >
+            <option value="" disabled>
+              Choose a battery
+            </option>
+            {FIXTURE_BATTERIES.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend className="text-sm font-medium text-foreground">
+            3. Recharge version
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[...RECHARGE_DURATION_TIERS.filter((t) => t !== "60s"), "plan_b"].map(
+              (tier) => (
+                <label
+                  key={tier}
+                  className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+                >
+                  <input
+                    type="radio"
+                    name="recharge"
+                    value={tier}
+                    className="sr-only"
+                    disabled
+                  />
+                  {tier === "plan_b" ? "Plan B" : tier}
+                </label>
+              ),
+            )}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="text-sm font-medium text-foreground">
+            4. Did you complete it?
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {Object.entries(CHECK_IN_COMPLETION_LABELS).map(([value, label]) => (
+              <label
+                key={value}
+                className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+              >
+                <input
+                  type="radio"
+                  name="completion"
+                  value={value}
+                  className="sr-only"
+                  disabled
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <p className="text-sm text-muted">
+          Persistence and Restart Rail arrive in Phase 5. Controls are disabled
+          until the data model is wired.
+        </p>
+      </form>
+    </div>
+  );
+}

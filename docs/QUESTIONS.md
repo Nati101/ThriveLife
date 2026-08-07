@@ -14,6 +14,11 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 | D1 | Primary client for V1 | **Web app** (not native mobile as primary target) | 2026-08-07 |
 | D2 | GitHub / ownership | **Solo developer account** for now; **migrate repo into an organization later** | 2026-08-07 |
 | D3 | Admin / editors | **Same web app with roles** (e.g. user, editor, reviewer, admin) — not a separate admin app | 2026-08-07 |
+| D4 | Web framework | **Next.js App Router + TypeScript + Tailwind** (`apps/web`) | 2026-08-07 |
+| D5 | Monorepo | **npm workspaces** — `apps/web`, `packages/shared`, `services/` reserved | 2026-08-07 |
+| D6 | Backend | **Next.js full-stack** for V1; Postgres in Phase 2 | 2026-08-07 |
+| D7 | Auth provider | **Clerk** planned (local stub until Phase 9); Auth.js documented fallback | 2026-08-07 |
+| D8 | Hosting region | **Prefer Canada** for assessment data; Legal confirm before beta | 2026-08-07 |
 
 Repo today: private under personal account [`Nati101/ThriveLife`](https://github.com/Nati101/ThriveLife). Org transfer is tracked in [TASKS.md](./TASKS.md) Phase 0.1.
 
@@ -23,10 +28,10 @@ Repo today: private under personal account [`Nati101/ThriveLife`](https://github
 
 ### Platform & architecture
 1. ~~**What is the primary client for V1?**~~ → **Decided: web app** (see D1).
-2. **What backend/database/hosting stack should we use?** Spec defines domain objects only. Preference for managed Canada-region hosting (PIPA/PIPEDA)? *(Web-first stack still open: e.g. Next.js + API + Postgres.)*
+2. ~~**What backend/database/hosting stack should we use?**~~ → **Decided: Next.js full-stack + Postgres; prefer Canada hosting** (see D4–D6, D8). Cloud billing owner still TBD.
 3. ~~**Who owns the GitHub org / cloud accounts?**~~ → **Decided: solo Dev account now; org migration later** (see D2). Apple/Google store accounts N/A for web-first V1; cloud billing owner still TBD.
-4. **Auth method?** Email/password, magic link, Sign in with Apple/Google, or other? Any SSO needed for pilot?
-5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix (permissions per role) still TBD.
+4. ~~**Auth method?**~~ → **Decided: Clerk** for Phase 9 (see D7). Exact sign-in methods (email/OAuth) and any SSO still TBD for pilot.
+5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix drafted in code; finalize with Joel before beta.
 
 ### Content gate (spec §11.1 / Part 14)
 6. **When will the content package be delivered** (terminology, constructs, 56+ items, DRAIN items, recharge library, result/safety/notification copy)? Scoring and recommendation logic should not ship on invented wording.

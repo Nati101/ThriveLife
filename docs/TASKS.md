@@ -18,29 +18,29 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 - [ ] Enable branch protection on `main` (PR required when collaborators join)
 - [ ] Add CONTRIBUTING notes when collaboration starts
 - [x] PR template present (`.github/pull_request_template.md`)
-- [ ] Choose and document monorepo vs multi-repo layout (placeholders under `apps/`, `services/`, `packages/` exist)
+- [x] Choose and document monorepo vs multi-repo layout (placeholders under `apps/`, `services/`, `packages/` exist)
 - [ ] Set up CI (lint, typecheck, unit tests) on PR
 - [ ] Set up environments: `local` / `staging` / `production`
-- [ ] Secrets management (no secrets in git); `.env.example` only
+- [x] Secrets management (no secrets in git); `.env.example` only
 - [ ] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
 - [ ] **Future: transfer repo to a GitHub organization** (Settings → Transfer ownership, or org import); update remotes, secrets, CI, and access; keep repo **private** unless cleared
 
 ### 0.2 Stack & platform decisions
 - [x] Primary client: **web app** (native mobile deferred)
-- [ ] Choose web framework (e.g. Next.js / Remix / similar — responsive, mobile-friendly browser UX)
-- [ ] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS, or Next.js full-stack)
-- [ ] Decide database (Postgres strongly implied by relational Section 10 model)
-- [ ] Decide auth provider (email magic link, OAuth, Cognito, Clerk, Auth0, etc.)
-- [ ] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations)
+- [x] Choose web framework (e.g. Next.js / Remix / similar — responsive, mobile-friendly browser UX) → **Next.js App Router + TypeScript + Tailwind**
+- [x] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS, or Next.js full-stack) → **Next.js full-stack** for V1; split `services/` later if needed
+- [x] Decide database (Postgres strongly implied by relational Section 10 model) → **Postgres** (wiring in Phase 2)
+- [x] Decide auth provider (email magic link, OAuth, Cognito, Clerk, Auth0, etc.) → **Clerk** planned; stub session until Phase 9 (Auth.js fallback documented)
+- [x] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations) → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
-- [ ] Define role matrix: e.g. `member` | `editor` | `reviewer` | `admin` (draft vs publish, threshold edit, user management)
+- [x] Define role matrix: e.g. `user` | `editor` | `reviewer` | `admin` (draft vs publish, threshold edit, user management) — draft in `@thrivelife/shared`; finalize with Joel before beta
 
 ### 0.3 Initial app shell (no product logic yet)
-- [ ] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
-- [ ] Bootstrap API / backend (or full-stack routes) with health check
+- [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
+- [x] Bootstrap API / backend (or full-stack routes) with health check
 - [ ] Bootstrap DB migrations tooling
-- [ ] Shared types / OpenAPI or tRPC contract between client and API
-- [ ] Role middleware / authorization helpers (fail closed on content mutations)
+- [x] Shared types / OpenAPI or tRPC contract between client and API → shared package types + fixtures (API contract later)
+- [x] Role middleware / authorization helpers (fail closed on content mutations)
 - [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
 
 ### 0.4 Brand & UX prerequisites (**Joel + Design** — blocks polished UI)
@@ -57,7 +57,7 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 - [ ] Receive result interpretation copy
 - [ ] Receive safety / escalation / disclaimer copy
 - [ ] Receive notification copy (before Phase 5 reminders)
-- [ ] **Dev:** seed placeholder/fixture content so engine can be unit-tested before final copy lands
+- [x] **Dev:** seed placeholder/fixture content so engine can be unit-tested before final copy lands
 
 ---
 

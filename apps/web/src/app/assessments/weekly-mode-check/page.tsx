@@ -1,0 +1,45 @@
+import {
+  FIXTURE_WEEKLY_MODE_ITEM,
+  DRIVING_MODE_BEHAVIOR,
+} from "@thrivelife/shared";
+import { PageHeader } from "@/components/page-header";
+
+export default function WeeklyModeCheckPage() {
+  return (
+    <div>
+      <PageHeader
+        eyebrow="Weekly Mode Check"
+        title="Declare this week’s Driving Mode"
+        description="User-declared mode is authoritative (stale after 7 days). Suggested mode from signal counts is advisory — never a silent overwrite."
+      />
+      <section className="max-w-lg rounded-2xl border border-border bg-card/90 p-5">
+        <p className="text-xs text-fixture">Fixture item</p>
+        <p className="mt-2 text-sm text-foreground">
+          {FIXTURE_WEEKLY_MODE_ITEM.wording}
+        </p>
+        <div className="mt-4 space-y-3">
+          {Object.values(DRIVING_MODE_BEHAVIOR).map((mode) => (
+            <div
+              key={mode.mode}
+              className="rounded-lg border border-border px-3 py-2"
+            >
+              <p className="text-sm font-medium capitalize text-foreground">
+                {mode.mode}
+              </p>
+              <p className="text-xs text-muted">
+                {mode.meaning} · ceiling {mode.durationCeilingMinutes} min
+                {mode.planBDefault ? " · Plan B default" : ""}
+              </p>
+            </div>
+          ))}
+          <div className="rounded-lg border border-border px-3 py-2">
+            <p className="text-sm font-medium text-foreground">Unsure</p>
+            <p className="text-xs text-muted">
+              Interaction with previous declared mode TBD (QUESTIONS.md #23).
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
