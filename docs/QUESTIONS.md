@@ -22,6 +22,10 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 
 Repo today: private under personal account [`Nati101/ThriveLife`](https://github.com/Nati101/ThriveLife). Org transfer is tracked in [TASKS.md](./TASKS.md) Phase 0.1.
 
+### Stack tension — Base44 (Vite) prior app vs Next scaffold
+
+A prior client exists in **Base44** (editor path shows `vite.config.js` → React/Vite). This repo’s scaffold is **Next.js**. **Do not rewrite or tear down Next until the Base44 export is in hand.** Then either (a) continue from the Vite export as source of truth, or (b) port UI/logic into the current Next scaffold. Export steps and local-search results: [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
+
 ---
 
 ## P0 — Blocks starting implementation
@@ -145,3 +149,4 @@ Repo today: private under personal account [`Nati101/ThriveLife`](https://github
 7. Recharge dimension: per-battery 2 items vs cross-battery?  
 8. Final banned/allowed language list beyond §5.3 examples?
 9. Role matrix for editor vs reviewer vs admin (who can publish vs draft-only)?
+10. Base44 prior app: can you export ZIP / connect GitHub / invite Dev? Prefer Vite-as-source or port into Next? (see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md))

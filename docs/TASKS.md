@@ -34,6 +34,8 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 - [x] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations) → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
 - [x] Define role matrix: e.g. `user` | `editor` | `reviewer` | `admin` (draft vs publish, threshold edit, user management) — draft in `@thrivelife/shared`; finalize with Joel before beta
+- [ ] **Base44 prior app:** obtain ZIP / GitHub export / workspace invite ([BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)); local search found no export yet
+- [ ] After export: choose (a) Vite export as source of truth **or** (b) port UI/logic into current Next scaffold — **do not** tear down Next until then
 
 ### 0.3 Initial app shell (no product logic yet)
 - [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
