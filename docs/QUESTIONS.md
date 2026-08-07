@@ -7,14 +7,26 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 
 ---
 
+## Decisions locked (no longer blockers)
+
+| # | Decision | Answer | Date |
+|---|----------|--------|------|
+| D1 | Primary client for V1 | **Web app** (not native mobile as primary target) | 2026-08-07 |
+| D2 | GitHub / ownership | **Solo developer account** for now; **migrate repo into an organization later** | 2026-08-07 |
+| D3 | Admin / editors | **Same web app with roles** (e.g. user, editor, reviewer, admin) — not a separate admin app | 2026-08-07 |
+
+Repo today: private under personal account [`Nati101/ThriveLife`](https://github.com/Nati101/ThriveLife). Org transfer is tracked in [TASKS.md](./TASKS.md) Phase 0.1.
+
+---
+
 ## P0 — Blocks starting implementation
 
 ### Platform & architecture
-1. **What is the primary client for V1?** Native iOS, Android, both (Expo/RN/Flutter), or web-first PWA? Spec says “app” but never specifies stores vs web.
-2. **What backend/database/hosting stack should we use?** Spec defines domain objects only. Preference for managed Canada-region hosting (PIPA/PIPEDA)?
-3. **Who owns the GitHub org / cloud accounts / Apple/Google developer accounts?** Solo developer vs Joel’s organization?
+1. ~~**What is the primary client for V1?**~~ → **Decided: web app** (see D1).
+2. **What backend/database/hosting stack should we use?** Spec defines domain objects only. Preference for managed Canada-region hosting (PIPA/PIPEDA)? *(Web-first stack still open: e.g. Next.js + API + Postgres.)*
+3. ~~**Who owns the GitHub org / cloud accounts?**~~ → **Decided: solo Dev account now; org migration later** (see D2). Apple/Google store accounts N/A for web-first V1; cloud billing owner still TBD.
 4. **Auth method?** Email/password, magic link, Sign in with Apple/Google, or other? Any SSO needed for pilot?
-5. **Admin editor audience:** Joel only, or additional editors/reviewers? Same app with roles, or separate admin site?
+5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix (permissions per role) still TBD.
 
 ### Content gate (spec §11.1 / Part 14)
 6. **When will the content package be delivered** (terminology, constructs, 56+ items, DRAIN items, recharge library, result/safety/notification copy)? Scoring and recommendation logic should not ship on invented wording.
@@ -87,16 +99,16 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 
 | # | Assumption | Impact if wrong |
 |---|------------|-----------------|
-| A1 | V1 is a **private** GitHub repo under the developer’s/GitHub user account until org is specified | Access control / transfer later |
+| A1 | V1 is a **private** GitHub repo under the solo Dev account (**confirmed**); transfer to org later | Schedule org transfer when ready |
 | A2 | **Postgres**-style relational DB matches Section 10; thresholds are data not code | Stack choice |
-| A3 | Build **API + client + admin**; not a no-code app | Team skills / timeline |
-| A4 | Pilot is **invite-only**; public stores later | Auth, gating, CI/CD |
+| A3 | Build **one web app** (member + role-gated content tools) + API — not a separate admin app, not no-code | Architecture |
+| A4 | Pilot is **invite-only**; native stores deferred (web-first) | Auth, gating, CI/CD |
 | A5 | **English (Canada)** only for V1 | i18n architecture |
 | A6 | **Text-only** journal in V1 (voice deferred) | Media storage |
-| A7 | Reminder notifications are **in MVP** but opt-in | Infra (push) |
+| A7 | Reminder notifications are **in MVP** but opt-in | Infra (email/web push) |
 | A8 | Dev may scaffold schema and **fixture content** before Joel’s final item bank | Parallelization |
 | A9 | No AI features in first beta | Scope |
-| A10 | Mobile **and** web not both required for first pilot — **needs decision** (see Q1) | Largest schedule driver |
+| A10 | **Web app is primary** for V1 (**confirmed**); native mobile deferred | Schedule / responsive UX |
 
 ---
 
@@ -124,6 +136,7 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 3. Exact algorithm for “most depleted” and Scan↔Assessment level distance.  
 4. Design system timeline and interim brand OK?  
 5. Pilot geography, hosting region, and legal review schedule?  
-6. Preferred app platform for first pilot users?  
+6. ~~Preferred app platform?~~ → Web (decided). Confirm pilot users are fine with browser-only.
 7. Recharge dimension: per-battery 2 items vs cross-battery?  
 8. Final banned/allowed language list beyond §5.3 examples?
+9. Role matrix for editor vs reviewer vs admin (who can publish vs draft-only)?

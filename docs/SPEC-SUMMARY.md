@@ -70,18 +70,27 @@ Adults experiencing ordinary overload, depletion, or burnout risk — parents, c
 
 ---
 
-## Tech / platform (not specified in spec)
+## Tech / platform
 
-The specification defines **domain architecture and product behavior**, not language, framework, hosting, or client (iOS/Android/web). Stack decisions are open — see [`QUESTIONS.md`](./QUESTIONS.md).
+The specification defines domain architecture and product behavior, not a specific framework. **Product decisions locked (2026-08-07):**
+
+| Decision | Choice |
+|----------|--------|
+| Primary client | **Web app** (native mobile deferred) |
+| Repo ownership | Solo Dev private repo now; **transfer to a GitHub org later** |
+| Content tools | **Same web app with roles** (member / editor / reviewer / admin) — not a separate admin app |
+
+Still open: exact web framework, backend, auth provider, Canada-region hosting — see [`QUESTIONS.md`](./QUESTIONS.md).
 
 **Implied technical requirements:**
 
-- User accounts, consent, age verification  
+- User accounts, consent, age verification, **RBAC** for content editors/reviewers  
 - Relational data model (Section 10 objects)  
-- Admin-editable config (especially `scoring_thresholds`)  
+- Admin-editable config (especially `scoring_thresholds`) via role-gated UI  
 - Auth + privacy controls (export/delete)  
 - Analytics for pilot (item timing, dwell, abandonment)  
 - No hard-coded scoring thresholds  
+- Responsive web UX (mobile browsers matter even without native apps)  
 
 ---
 

@@ -10,6 +10,8 @@ Helps adults notice low energy, identify which Life Battery is most depleted, an
 
 Early scaffolding and planning. No product implementation yet.
 
+**Repo:** https://github.com/Nati101/ThriveLife (private, solo Dev account). Plan to **transfer into a GitHub organization** later — see [docs/TASKS.md](docs/TASKS.md) Phase 0.1.
+
 | Document | Purpose |
 |----------|---------|
 | [docs/SPEC-SUMMARY.md](docs/SPEC-SUMMARY.md) | Concise product & architecture summary |
@@ -20,20 +22,26 @@ Early scaffolding and planning. No product implementation yet.
 Original Word spec (local): `/Users/nati/Downloads/ThriveLife-Developer-Specification-v1.docx`  
 Version: Developer Specification **v1.0 · July 2026** (confidential)
 
-## Planned shape (pending stack decisions)
+## Decisions locked
 
-See [docs/QUESTIONS.md](docs/QUESTIONS.md) — platform and stack are **not** specified in the developer guide.
+- **Web app** for V1 (native mobile deferred)
+- **Same app with roles** for content editors/reviewers (not a separate admin app)
+- Solo private GitHub ownership now → org migration later
+
+Framework/backend/auth/hosting still open — [docs/QUESTIONS.md](docs/QUESTIONS.md).
+
+## Planned shape
 
 ```
 ThriveLife/
 ├── docs/                 # Spec, tasks, questions
-├── apps/                 # Client app(s) — TBD
-├── services/             # API / workers — TBD
+├── apps/                 # Web app (member + role-gated content routes)
+├── services/             # API / workers — TBD with stack
 ├── packages/             # Shared types, scoring config — TBD
-└── admin/                # Content editor for Joel — TBD
+└── admin/                # Deprecated placeholder — content tools live in-app via roles
 ```
 
-Placeholder directories exist so the monorepo layout is visible; implementation starts after Phase 0 decisions.
+Implementation starts after remaining Phase 0 stack choices.
 
 ## Domain snapshot
 

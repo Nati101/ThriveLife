@@ -1,2 +1,2 @@
-# Placeholder — client application(s) will live here after Phase 0 stack decision.
-# See docs/QUESTIONS.md (platform) and docs/TASKS.md Phase 0.
+# Web application (primary V1 client). Member flows + role-gated editor/reviewer/admin routes.
+# Framework TBD — see docs/QUESTIONS.md and docs/TASKS.md Phase 0.2.

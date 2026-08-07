@@ -1,2 +1,3 @@
-# Placeholder — Joel-facing content admin (constructs, items, thresholds, recharge library).
-# Spec §11.2: admin must edit scoring thresholds and content without code releases.
+# Deprecated layout note: content editing is role-gated inside the same web app
+# (see docs/TASKS.md Phase 0.2 / 2.3). This folder is a placeholder only; do not
+# build a separate admin deploy here unless requirements change.

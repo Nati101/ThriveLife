@@ -11,31 +11,36 @@ Another developer should be able to execute from this list without re-reading th
 
 ## Phase 0 — Project foundation (Dev)
 
-Scaffolding, tooling, and decisions that unblock all later phases. Spec does not prescribe stack — confirm answers in QUESTIONS.md before locking choices.
+Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client; solo private GitHub repo (org transfer later); **same app with roles** for editors/reviewers (not a separate admin app). See [QUESTIONS.md](./QUESTIONS.md) Decisions locked.
 
 ### 0.1 Repository & engineering hygiene
-- [ ] Confirm GitHub org/owner, visibility (private recommended), and branch protection
-- [ ] Add CONTRIBUTING / PR template if collaborating
-- [ ] Choose and document monorepo vs multi-repo layout
+- [x] Create private GitHub repo under solo Dev account (`Nati101/ThriveLife`)
+- [ ] Enable branch protection on `main` (PR required when collaborators join)
+- [ ] Add CONTRIBUTING notes when collaboration starts
+- [x] PR template present (`.github/pull_request_template.md`)
+- [ ] Choose and document monorepo vs multi-repo layout (placeholders under `apps/`, `services/`, `packages/` exist)
 - [ ] Set up CI (lint, typecheck, unit tests) on PR
 - [ ] Set up environments: `local` / `staging` / `production`
 - [ ] Secrets management (no secrets in git); `.env.example` only
 - [ ] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
+- [ ] **Future: transfer repo to a GitHub organization** (Settings → Transfer ownership, or org import); update remotes, secrets, CI, and access; keep repo **private** unless cleared
 
-### 0.2 Stack & platform decisions (confirm with stakeholders)
-- [ ] Decide primary client(s): iOS / Android / responsive web / all
-- [ ] Decide framework (e.g. Expo/React Native, Flutter, Next.js PWA)
-- [ ] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS)
+### 0.2 Stack & platform decisions
+- [x] Primary client: **web app** (native mobile deferred)
+- [ ] Choose web framework (e.g. Next.js / Remix / similar — responsive, mobile-friendly browser UX)
+- [ ] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS, or Next.js full-stack)
 - [ ] Decide database (Postgres strongly implied by relational Section 10 model)
 - [ ] Decide auth provider (email magic link, OAuth, Cognito, Clerk, Auth0, etc.)
 - [ ] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations)
-- [ ] Decide admin UI approach (same app role-gated vs separate admin app)
+- [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
+- [ ] Define role matrix: e.g. `member` | `editor` | `reviewer` | `admin` (draft vs publish, threshold edit, user management)
 
 ### 0.3 Initial app shell (no product logic yet)
-- [ ] Bootstrap client app with navigation skeleton
-- [ ] Bootstrap API / backend project with health check
+- [ ] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
+- [ ] Bootstrap API / backend (or full-stack routes) with health check
 - [ ] Bootstrap DB migrations tooling
 - [ ] Shared types / OpenAPI or tRPC contract between client and API
+- [ ] Role middleware / authorization helpers (fail closed on content mutations)
 - [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
 
 ### 0.4 Brand & UX prerequisites (**Joel + Design** — blocks polished UI)
@@ -73,7 +78,7 @@ Spec §11.1. Developer should **not** ship real scoring/recommendation with inve
 Spec §§10–11.2. Everything else depends on this.
 
 ### 2.1 Database schema (Section 10)
-- [ ] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified
+- [ ] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified, **role** (or roles join table for member/editor/reviewer/admin)
 - [ ] `Battery` — name, definition, icon, display_order, book_chapter_ref (seed 7 batteries)
 - [ ] `Construct` — battery_id, dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
 - [ ] `Instrument` — drain_check | battery_scan | full_assessment | weekly_mode_check
@@ -102,17 +107,18 @@ Spec §§10–11.2. Everything else depends on this.
 - [ ] Daily Check-In and Full Assessment never share a chart axis (data model supports separation)
 - [ ] Assessment version stamped on every result session
 
-### 2.3 Admin content editor
-- [ ] Auth for admin role (Joel)
+### 2.3 Content editor (same web app, role-gated)
+- [ ] Role-based access: editors/reviewers/admins reach content tools inside the **same** web app (no separate admin deploy)
+- [ ] Enforce permissions server-side (editor draft, reviewer approve, admin publish/thresholds — finalize matrix in Phase 0.2)
 - [ ] CRUD batteries, constructs, instruments, items (with versioning UX)
 - [ ] When editing a construct, surface **all timeframe variants** together
 - [ ] CRUD response scales and labels
-- [ ] CRUD scoring thresholds (with audit log of changes)
+- [ ] CRUD scoring thresholds (with audit log of changes) — restrict to appropriate roles
 - [ ] CRUD recharge actions, signals, recommendation lookup rows
 - [ ] CRUD result interpretation / safety / notification copy
 - [ ] Preview mode for instruments
 - [ ] Activate/deactivate items without deleting historical responses
-- [ ] Acceptance: Joel can change thresholds and copy **without a code release**
+- [ ] Acceptance: Joel (and other editors/reviewers) can change thresholds and copy **without a code release**
 
 ### 2.4 Seed & fixtures
 - [ ] Seed seven batteries + provisional thresholds (§4.3, §4.4 matrix as code rules reading config)
@@ -369,15 +375,17 @@ Spec §11.8.
 Scattered across MVP but needed for real users.
 
 - [ ] Sign up / sign in / sign out / password reset or magic link
+- [ ] Assign and change roles (member / editor / reviewer / admin) without a separate app
 - [ ] Consent capture + versioned consent records
 - [ ] Timezone handling for daily/weekly prompts
-- [ ] Push/email notification infrastructure (optional reminders)
+- [ ] Email and/or web-push notification infrastructure (optional reminders; native push N/A for web-first)
 - [ ] Staging data hygiene (no real PII in shared staging without controls)
 - [ ] Backup/restore runbooks
 - [ ] Rate limiting / abuse basics
 - [ ] Accessibility pass (WCAG-oriented; recharge accessibility_variations)
-- [ ] App store / web launch checklist (when platform chosen)
+- [ ] Web launch / hosting checklist (custom domain, HTTPS, staging URL)
 - [ ] Monitoring & on-call basics for beta
+- [ ] When ready: **transfer GitHub repo to organization** and rotate deploy secrets / access
 
 ---
 
@@ -401,21 +409,21 @@ From Part 14 — not “features” but release blockers for public launch.
 - [ ] Unit + integration tests for scoring and authority boundaries
 - [ ] Snapshot/UI tests for critical flows (Scan, Pit Stop, Full Assessment, Check-In)
 - [ ] Load/perf smoke for Full Assessment session (56 items)
-- [ ] Security review before beta (authz on admin + user data isolation)
+- [ ] Security review before beta (authz on content roles + user data isolation)
 - [ ] Keep all numeric thresholds in `ScoringThreshold` / config — grep CI to forbid hard-coded bounds in scorer
 
 ---
 
 ## Suggested execution order for a solo developer
 
-1. Phase 0 decisions + shell  
-2. Phase 2 schema + admin + fixture content  
+1. Phase 0 remaining web stack choices + shell + roles middleware  
+2. Phase 2 schema + role-gated content tools + fixture content  
 3. Phase 3 engine with fixtures (parallel Joel content)  
 4. Phase 4 dashboard + lookup recommendations (needs recharge library)  
 5. Phase 5 daily loop  
 6. Phase 6 onboarding wired to real flows  
 7. Phase 7 + 8 before any beta invite  
-8. Phase 9 hardening throughout  
+8. Phase 9 hardening throughout; org transfer when ownership model is ready  
 9. Phase 10 validation with Joel  
 
 **Overlap allowed:** Phases 2–5. **Hard gates:** Joel content before real scoring/recs; Safety + telemetry before beta.
