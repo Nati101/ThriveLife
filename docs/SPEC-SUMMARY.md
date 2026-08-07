@@ -80,7 +80,7 @@ The specification defines domain architecture and product behavior, not a specif
 | Repo ownership | Solo Dev private repo now; **transfer to a GitHub org later** |
 | Content tools | **Same web app with roles** (member / editor / reviewer / admin) — not a separate admin app |
 
-**Additional stack decisions (2026-08-07):** Next.js App Router + TypeScript + Tailwind (`apps/web`); npm workspaces monorepo; Next.js full-stack + Postgres (Phase 2); Clerk for auth (stub until Phase 9); prefer Canada-region hosting — see [`QUESTIONS.md`](./QUESTIONS.md).
+**Additional stack decisions (2026-08-07):** **Vite + React + TypeScript + Tailwind** (`apps/web`) to match the client’s Base44 app (pivoted from Next.js); npm workspaces; backend TBD pending Base44 export; prefer Canada-region hosting — see [`QUESTIONS.md`](./QUESTIONS.md) and [`BASE44-PRIOR-APP.md`](./BASE44-PRIOR-APP.md).
 
 **Implied technical requirements:**
 

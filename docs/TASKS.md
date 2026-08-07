@@ -27,22 +27,22 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 
 ### 0.2 Stack & platform decisions
 - [x] Primary client: **web app** (native mobile deferred)
-- [x] Choose web framework (e.g. Next.js / Remix / similar — responsive, mobile-friendly browser UX) → **Next.js App Router + TypeScript + Tailwind**
-- [x] Decide backend (e.g. Node/Nest, Django, Rails, Supabase/Firebase BaaS, or Next.js full-stack) → **Next.js full-stack** for V1; split `services/` later if needed
-- [x] Decide database (Postgres strongly implied by relational Section 10 model) → **Postgres** (wiring in Phase 2)
-- [x] Decide auth provider (email magic link, OAuth, Cognito, Clerk, Auth0, etc.) → **Clerk** planned; stub session until Phase 9 (Auth.js fallback documented)
-- [x] Decide hosting region (Canada/Alberta PIPA & PIPEDA considerations) → **Prefer Canada region**; Legal confirm before beta
+- [x] Choose web framework → **Vite + React + TypeScript + Tailwind + React Router** (aligned with Base44; Next.js scaffold replaced)
+- [x] Decide backend → **TBD pending Base44 export** (may keep Base44 SDK/backend) or Postgres API in Phase 2
+- [x] Decide database → Base44 entities if staying on their backend; else **Postgres** (Phase 2)
+- [x] Decide auth provider → stub locally; prefer **Base44 auth** if keeping their backend, else Clerk/Auth.js
+- [x] Decide hosting region → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
-- [x] Define role matrix: e.g. `user` | `editor` | `reviewer` | `admin` (draft vs publish, threshold edit, user management) — draft in `@thrivelife/shared`; finalize with Joel before beta
-- [ ] **Base44 prior app:** obtain ZIP / GitHub export / workspace invite ([BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)); local search found no export yet
-- [ ] After export: choose (a) Vite export as source of truth **or** (b) port UI/logic into current Next scaffold — **do not** tear down Next until then
+- [x] Define role matrix: `user` | `editor` | `reviewer` | `admin` — draft in `@thrivelife/shared`
+- [ ] **Base44 prior app:** obtain ZIP / GitHub export / workspace invite ([BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) — **blocker for real UI**
+- [ ] After export: merge Base44 pages/components/entities into `apps/web` (or adopt export as source of truth)
 
 ### 0.3 Initial app shell (no product logic yet)
 - [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
-- [x] Bootstrap API / backend (or full-stack routes) with health check
+- [x] Health probe (`apps/web/public/health.json`); full API when Base44 export or Phase 2 lands
 - [ ] Bootstrap DB migrations tooling
-- [x] Shared types / OpenAPI or tRPC contract between client and API → shared package types + fixtures (API contract later)
-- [x] Role middleware / authorization helpers (fail closed on content mutations)
+- [x] Shared types + fixtures in `@thrivelife/shared`
+- [x] Role gate helpers (fail closed on `/admin` routes)
 - [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
 
 ### 0.4 Brand & UX prerequisites (**Joel + Design** — blocks polished UI)

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "npm run dev -w @thrivelife/web",
     "build": "npm run build -w @thrivelife/web",
-    "start": "npm run start -w @thrivelife/web",
+    "preview": "npm run preview -w @thrivelife/web",
     "lint": "npm run lint -w @thrivelife/web",
     "typecheck": "npm run typecheck -w @thrivelife/shared && npm run typecheck -w @thrivelife/web"
   },

@@ -8,26 +8,32 @@ Helps adults notice low energy, identify which Life Battery is most depleted, an
 
 ## Status
 
-Phase 0 web foundation is runnable. Product engine (scoring, persistence, real auth) comes next.
+Phase 0 web foundation is runnable on **Vite + React + TypeScript** (aligned with the client’s existing **Base44** app). Product engine and real Base44 UI still pending.
 
-**Repo:** https://github.com/Nati101/ThriveLife (private, solo Dev account). Plan to **transfer into a GitHub organization** later — see [docs/TASKS.md](docs/TASKS.md) Phase 0.1.
+**Repo:** https://github.com/Nati101/ThriveLife (private).
 
 | Document | Purpose |
 |----------|---------|
 | [docs/SPEC-SUMMARY.md](docs/SPEC-SUMMARY.md) | Concise product & architecture summary |
-| [docs/TASKS.md](docs/TASKS.md) | Phased, actionable build checklist |
+| [docs/TASKS.md](docs/TASKS.md) | Phased build checklist |
 | [docs/QUESTIONS.md](docs/QUESTIONS.md) | Clarifying questions & open risks |
-| [docs/ThriveLife-Developer-Specification-v1.txt](docs/ThriveLife-Developer-Specification-v1.txt) | Full developer spec (plaintext) |
+| [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md) | **Base44 previous app — access notes & export blocker** |
+| [docs/ThriveLife-Developer-Specification-v1.txt](docs/ThriveLife-Developer-Specification-v1.txt) | Full developer spec |
+
+## Blocker — Base44 source needed
+
+The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`). The editor is **not** publicly readable. We could not recover UI/code without login.
+
+**Please export or share access** (ZIP, GitHub sync, or `base44 eject`) — steps in [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md). Until then this repo ships a Vite foundation + fixture content from the spec, not their live Base44 UI.
 
 ## Decisions locked
 
 - **Web app** for V1 (native mobile deferred)
-- **Same app with roles** — `user` | `editor` | `reviewer` | `admin` (not a separate admin app)
-- Solo private GitHub ownership now → org migration later
-- **Stack:** Next.js (App Router) + TypeScript + Tailwind in an npm workspaces monorepo
-- **Backend path:** Next.js full-stack now; Postgres when Phase 2 schema lands
-- **Auth path:** Clerk (stub session locally until Phase 9); Auth.js is the fallback if we prefer self-hosted sessions
-- **Hosting note:** Prefer a **Canada** region for assessment data (Alberta PIPA / PIPEDA). Confirm with Legal before beta.
+- **Same app with roles** — `user` | `editor` | `reviewer` | `admin`
+- **Stack:** **Vite + React + TypeScript + Tailwind + React Router** (matches Base44; pivoted from an earlier Next.js scaffold)
+- Shared domain package: `packages/shared`
+- Auth: stub locally; prefer Base44 auth if we stay on their backend, else Clerk/Auth.js
+- Hosting: prefer **Canada** region for assessment data (Legal confirm before beta)
 
 ## Run locally
 
@@ -40,86 +46,42 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-Useful checks:
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://127.0.0.1:3000/health.json
 npm run typecheck
-npm run lint
+npm run build
 ```
 
 ### Local roles (stub auth)
 
-Until Clerk is wired, open **/dev/role** to switch `user` / `editor` / `reviewer` / `admin`. Middleware fail-closes `/admin/*` for users without content-tool roles; `/admin/thresholds` requires `admin`.
-
-### Environment
-
-```bash
-cp .env.example .env
-```
-
-No secrets are required for the scaffold. Clerk keys will be documented in `.env.example` when Phase 9 starts.
+Open **/dev/role** to switch `user` / `editor` / `reviewer` / `admin`. `/admin` is fail-closed for users without content-tool roles; `/admin/thresholds` requires `admin`.
 
 ## Repo layout
 
 ```
 ThriveLife/
-├── apps/web/             # Next.js app (member + role-gated /admin)
+├── apps/web/             # Vite + React (Base44-aligned)
 ├── packages/shared/      # Domain types + fixture content
-├── services/             # Reserved for workers / future API split
-├── admin/                # Deprecated stub — see admin/README.md
-└── docs/                 # Spec, tasks, questions
+├── services/             # Reserved for workers / API later
+├── admin/                # Deprecated stub — in-app /admin routes
+└── docs/                 # Spec, tasks, Base44 notes
 ```
 
-## Routes (scaffold)
+## Routes
 
 | Path | Purpose |
 |------|---------|
 | `/` | Brand home + domain overview |
 | `/onboarding` | Eight-step onboarding skeleton |
-| `/dashboard` | Seven-battery placeholder dashboard |
+| `/dashboard` | Seven-battery placeholder |
 | `/check-in` | Daily Check-In UI stub |
-| `/assessments` | Instrument index |
-| `/assessments/drain-check` | DRAIN Check fixtures |
-| `/assessments/battery-scan` | Battery Scan fixtures |
-| `/assessments/full-assessment` | Full Assessment fixture map |
-| `/assessments/weekly-mode-check` | Driving Mode check stub |
-| `/admin` | Content tools hub (editor+) |
-| `/admin/content` | Fixture content library |
-| `/admin/thresholds` | Provisional scoring thresholds (admin) |
+| `/assessments/*` | Four instruments (fixtures) |
+| `/admin`, `/admin/content`, `/admin/thresholds` | Role-gated content tools |
 | `/dev/role` | Local role switcher |
-| `/api/health` | Health check JSON |
-
-Fixture copy is labeled `[FIXTURE]` — not Joel-authored and not clinical claims.
-
-## Domain snapshot
-
-- **7 Life Batteries** × **3 dimensions** (Capacity, Strain, Recharge Skill) — never averaged
-- **4 instruments:** DRAIN Check, Battery Scan, Full Assessment (56 items), Weekly Mode Check
-- **Driving Modes:** Green / Yellow / Red (user-declared)
-- **Recharge:** 60s / 2 / 5 / 10 min with Plan A / Plan B
-- **Admin-editable** scoring thresholds and recommendation lookup tables
-
-## Build phases (high level)
-
-0. Foundation & stack decisions ← **in progress / scaffold done**  
-1. Content architecture (Joel)  
-2. Data model & admin  
-3. Assessment engine  
-4. Dashboard & recommendations  
-5. Daily loop  
-6. Onboarding  
-7. Safety & privacy *(beta gate)*  
-8. Pilot telemetry *(beta gate)*  
-
-Details: [docs/TASKS.md](docs/TASKS.md)
-
-## Out of scope for V1
-
-Team features, teen accounts, subscriptions, gamification, AI emotional analysis, faith-based pathway, workplace reporting — see spec §11.9.
+| `/health.json` | Static health probe |
 
 ## Confidentiality
 
-This repository may contain product specification material marked **CONFIDENTIAL — NOT FOR DISTRIBUTION**. Keep the remote **private** unless explicitly cleared for public release.
+Spec material may be **CONFIDENTIAL**. Keep the remote **private** unless cleared.

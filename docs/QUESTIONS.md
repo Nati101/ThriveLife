@@ -14,17 +14,18 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 | D1 | Primary client for V1 | **Web app** (not native mobile as primary target) | 2026-08-07 |
 | D2 | GitHub / ownership | **Solo developer account** for now; **migrate repo into an organization later** | 2026-08-07 |
 | D3 | Admin / editors | **Same web app with roles** (e.g. user, editor, reviewer, admin) — not a separate admin app | 2026-08-07 |
-| D4 | Web framework | **Next.js App Router + TypeScript + Tailwind** (`apps/web`) | 2026-08-07 |
+| D4 | Web framework | **Vite + React + TypeScript + Tailwind** (`apps/web`) — matches Base44; replaced earlier Next.js scaffold | 2026-08-07 |
 | D5 | Monorepo | **npm workspaces** — `apps/web`, `packages/shared`, `services/` reserved | 2026-08-07 |
-| D6 | Backend | **Next.js full-stack** for V1; Postgres in Phase 2 | 2026-08-07 |
-| D7 | Auth provider | **Clerk** planned (local stub until Phase 9); Auth.js documented fallback | 2026-08-07 |
+| D6 | Backend | **Pending Base44 export** — may use Base44 SDK/backend first; else Postgres API in Phase 2 | 2026-08-07 |
+| D7 | Auth provider | Stub locally; prefer Base44 auth if keeping their backend, else Clerk/Auth.js | 2026-08-07 |
 | D8 | Hosting region | **Prefer Canada** for assessment data; Legal confirm before beta | 2026-08-07 |
+| D9 | Prior client app | Base44 app `6a74e3c6a18bdd8e70a443ae` — **export required** (see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) | 2026-08-07 |
 
 Repo today: private under personal account [`Nati101/ThriveLife`](https://github.com/Nati101/ThriveLife). Org transfer is tracked in [TASKS.md](./TASKS.md) Phase 0.1.
 
-### Stack tension — Base44 (Vite) prior app vs Next scaffold
+### Base44 prior app
 
-A prior client exists in **Base44** (editor path shows `vite.config.js` → React/Vite). This repo’s scaffold is **Next.js**. **Do not rewrite or tear down Next until the Base44 export is in hand.** Then either (a) continue from the Vite export as source of truth, or (b) port UI/logic into the current Next scaffold. Export steps and local-search results: [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
+A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite + React** to match. Real UI/entities still need a ZIP / GitHub sync / eject — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
 
 ---
 
@@ -32,9 +33,10 @@ A prior client exists in **Base44** (editor path shows `vite.config.js` → Reac
 
 ### Platform & architecture
 1. ~~**What is the primary client for V1?**~~ → **Decided: web app** (see D1).
-2. ~~**What backend/database/hosting stack should we use?**~~ → **Decided: Next.js full-stack + Postgres; prefer Canada hosting** (see D4–D6, D8). Cloud billing owner still TBD.
+2. ~~**What backend/database/hosting stack should we use?**~~ → **Frontend: Vite/React (Base44-aligned).** Backend TBD pending Base44 export (keep Base44 vs Postgres). Prefer Canada hosting (D4–D6, D8).
 3. ~~**Who owns the GitHub org / cloud accounts?**~~ → **Decided: solo Dev account now; org migration later** (see D2). Apple/Google store accounts N/A for web-first V1; cloud billing owner still TBD.
-4. ~~**Auth method?**~~ → **Decided: Clerk** for Phase 9 (see D7). Exact sign-in methods (email/OAuth) and any SSO still TBD for pilot.
+4. **Auth method?** Stub locally. Prefer Base44 auth if staying on their backend; else Clerk/Auth.js (D7). Exact sign-in methods TBD.
+4b. **Base44 export:** Client must share ZIP / GitHub sync / eject of app `6a74e3c6a18bdd8e70a443ae` — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
 5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix drafted in code; finalize with Joel before beta.
 
 ### Content gate (spec §11.1 / Part 14)

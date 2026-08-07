@@ -1,0 +1,7 @@
+{
+  "batteries": 7,
+  "instruments": 4,
+  "ok": true,
+  "service": "thrivelife-web",
+  "stack": "vite-react"
+}

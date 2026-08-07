@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3f6f2;
+  --background-accent: #e4ebe3;
+  --foreground: #1c2a22;
+  --muted: #5c6b62;
+  --card: #fbfcf9;
+  --border: #c9d4cb;
+  --brand: #2f6b4f;
+  --brand-soft: #d7e8dc;
+  --accent: #b86b2c;
+  --warn-soft: #f3e6d4;
+  --fixture: #6b5b2f;
+  --font-sans: "Source Sans 3", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-accent: var(--background-accent);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-warn-soft: var(--warn-soft);
+  --color-fixture: var(--fixture);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #dfece3 0%, transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, #efe6d8 0%, transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+}
