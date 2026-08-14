@@ -17,14 +17,12 @@ Phase 0 web foundation is runnable on **Vite + React + TypeScript** (aligned wit
 | [docs/SPEC-SUMMARY.md](docs/SPEC-SUMMARY.md) | Concise product & architecture summary |
 | [docs/TASKS.md](docs/TASKS.md) | Phased build checklist |
 | [docs/QUESTIONS.md](docs/QUESTIONS.md) | Clarifying questions & open risks |
-| [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md) | **Base44 previous app — access notes & export blocker** |
+| [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md) | **Base44 previous app — paste-from-editor (free plan)** |
 | [docs/ThriveLife-Developer-Specification-v1.txt](docs/ThriveLife-Developer-Specification-v1.txt) | Full developer spec |
 
 ## Blocker — Base44 source needed
 
-The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`). The editor is **not** publicly readable. We could not recover UI/code without login.
-
-**Please export or share access** (ZIP, GitHub sync, or `base44 eject`) — steps in [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md). Until then this repo ships a Vite foundation + fixture content from the spec, not their live Base44 UI.
+The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`). Free plan cannot ZIP-export. **Paste files from the Base44 code editor** into `vendor/base44-prior/` — steps in [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md). Until then this repo ships a Vite foundation + fixture content from the spec, not their live Base44 UI.
 
 ## Decisions locked
 
@@ -66,6 +64,7 @@ ThriveLife/
 ├── packages/shared/      # Domain types + fixture content
 ├── services/             # Reserved for workers / API later
 ├── admin/                # Deprecated stub — in-app /admin routes
+├── vendor/base44-prior/  # Pasted Base44 editor source (free plan)
 └── docs/                 # Spec, tasks, Base44 notes
 ```
 

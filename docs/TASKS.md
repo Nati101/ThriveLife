@@ -34,8 +34,8 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 - [x] Decide hosting region → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
 - [x] Define role matrix: `user` | `editor` | `reviewer` | `admin` — draft in `@thrivelife/shared`
-- [ ] **Base44 prior app:** obtain ZIP / GitHub export / workspace invite ([BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) — **blocker for real UI**
-- [ ] After export: merge Base44 pages/components/entities into `apps/web` (or adopt export as source of truth)
+- [ ] **Base44 prior app:** paste editor source into `vendor/base44-prior/` (free plan; no paid export) ([BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) — **blocker for real UI**
+- [ ] After paste: merge Base44 pages/components/entities into `apps/web` (or adopt that tree as source of truth)
 
 ### 0.3 Initial app shell (no product logic yet)
 - [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)

@@ -19,13 +19,13 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 | D6 | Backend | **Pending Base44 export** — may use Base44 SDK/backend first; else Postgres API in Phase 2 | 2026-08-07 |
 | D7 | Auth provider | Stub locally; prefer Base44 auth if keeping their backend, else Clerk/Auth.js | 2026-08-07 |
 | D8 | Hosting region | **Prefer Canada** for assessment data; Legal confirm before beta | 2026-08-07 |
-| D9 | Prior client app | Base44 app `6a74e3c6a18bdd8e70a443ae` — **export required** (see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) | 2026-08-07 |
+| D9 | Prior client app | Base44 app `6a74e3c6a18bdd8e70a443ae` — **paste from editor** (free plan; see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) | 2026-08-14 |
 
 Repo today: private under personal account [`Nati101/ThriveLife`](https://github.com/Nati101/ThriveLife). Org transfer is tracked in [TASKS.md](./TASKS.md) Phase 0.1.
 
 ### Base44 prior app
 
-A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite + React** to match. Real UI/entities still need a ZIP / GitHub sync / eject — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
+A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite + React** to match. Real UI/entities: **paste from the Base44 code editor** into `vendor/base44-prior/` (no paid export) — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
 
 ---
 
@@ -36,7 +36,7 @@ A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite
 2. ~~**What backend/database/hosting stack should we use?**~~ → **Frontend: Vite/React (Base44-aligned).** Backend TBD pending Base44 export (keep Base44 vs Postgres). Prefer Canada hosting (D4–D6, D8).
 3. ~~**Who owns the GitHub org / cloud accounts?**~~ → **Decided: solo Dev account now; org migration later** (see D2). Apple/Google store accounts N/A for web-first V1; cloud billing owner still TBD.
 4. **Auth method?** Stub locally. Prefer Base44 auth if staying on their backend; else Clerk/Auth.js (D7). Exact sign-in methods TBD.
-4b. **Base44 export:** Client must share ZIP / GitHub sync / eject of app `6a74e3c6a18bdd8e70a443ae` — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
+4b. **Base44 source:** Client pastes editor files of app `6a74e3c6a18bdd8e70a443ae` into `vendor/base44-prior/` (free plan) — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
 5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix drafted in code; finalize with Joel before beta.
 
 ### Content gate (spec §11.1 / Part 14)

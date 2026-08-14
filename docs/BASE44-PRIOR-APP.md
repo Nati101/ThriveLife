@@ -1,9 +1,9 @@
-# Base44 prior app — handoff & export guide
+# Base44 prior app — handoff & recovery
 
-**Status (2026-08-07):** Prior Base44 codebase **not recovered locally**. Editor requires login.  
-**Repo stack now:** **Vite + React + TypeScript** under `apps/web` (aligned with Base44; Next.js scaffold removed per client update).
+**Status (2026-08-14):** Prior Base44 codebase **not recovered locally**. Owner is on the **free plan** (no ZIP export) and can already **see the code in the Base44 editor**. Recovery path: **paste from the editor** (or let an agent read the editor UI via Cursor Browser MCP after login).  
+**Repo stack now:** **Vite + React + TypeScript** under `apps/web` (aligned with Base44).
 
-**Related:** [QUESTIONS.md](./QUESTIONS.md) · [TASKS.md](./TASKS.md) · [README.md](../README.md)
+**Related:** [QUESTIONS.md](./QUESTIONS.md) · [TASKS.md](./TASKS.md) · [README.md](../README.md) · drop folder [`vendor/base44-prior/`](../vendor/base44-prior/)
 
 ---
 
@@ -15,7 +15,8 @@
 | App ID | `6a74e3c6a18bdd8e70a443ae` |
 | Base44 stack (docs) | **React + Vite** + Tailwind + `@base44/sdk`; pages under `src/pages` |
 | This repo today | Vite + React + TS + Tailwind + React Router (`apps/web`) + `@thrivelife/shared` fixtures |
-| Access without credentials | **Blocked** — public fetch of the editor returns the SPA shell only / times out |
+| Export ZIP | Not available on free plan — **do not upgrade just for this** |
+| Access without login | **Blocked** — public fetch of the editor returns the SPA shell only |
 
 ### Local search (2026-08-07)
 
@@ -26,41 +27,48 @@ Searched Downloads, Desktop, Documents, and this workspace for Base44 / ThriveLi
 
 ---
 
-## Blocker — please export the Base44 project
+## Free-plan path — paste from the editor (do this)
 
-We cannot pull UI, entities, or `@base44/sdk` wiring without the owner exporting. Pick **one**:
+You already have the source in the Base44 **Code** workspace. Copy it into this repo. No paid export.
 
-### Option 1 — Export ZIP (simplest)
+1. Sign in at [app.base44.com](https://app.base44.com/) in your own browser (do **not** send passwords in chat).
+2. Open app `6a74e3c6a18bdd8e70a443ae` → **Code**.
+3. Copy files into [`vendor/base44-prior/`](../vendor/base44-prior/) using the **same paths** as in the editor.
+4. Start with `package.json`, then `vite.config.js` or `vite.config.ts`, then the whole `src/` tree.
+5. Optionally paste a screenshot or text dump of the **file tree** so we know what is still missing.
 
-1. Sign in at [app.base44.com](https://app.base44.com/) as app owner.
-2. Open app `6a74e3c6a18bdd8e70a443ae`.
-3. **Code** tab → **Export project as ZIP** (Builder plan or higher typically required).
-4. Drop the ZIP into this workspace (e.g. `imports/base44-export/`) or share it with Dev.
+Checklist and skip rules: [`vendor/base44-prior/README.md`](../vendor/base44-prior/README.md).
 
-### Option 2 — GitHub sync
+### Optional — Cursor Browser MCP
 
-1. App Dashboard → **GitHub** → connect and create a **private** repo (do not overwrite `Nati101/ThriveLife` until we merge intentionally).
-2. Invite Dev as collaborator.
+If **cursor-ide-browser** is enabled in Cursor **Settings → MCP**, an agent can open the editor URL and read what you can already see (file tree + open file). If a login screen appears, **sign in in that browser tab** and tell the agent to continue. Still do not paste passwords into chat.
 
-Env after clone (from Base44 docs):
+This session’s MCP catalog had **no** `cursor-ide-browser` (only `cursor-app-control`), so paste-into-`vendor/base44-prior/` is the reliable path until Browser MCP is enabled.
 
-```bash
-VITE_BASE44_APP_ID=6a74e3c6a18bdd8e70a443ae
-VITE_BASE44_APP_BASE_URL=https://<your-backend>.base44.app
-```
+---
 
-### Option 3 — CLI eject (owner machine)
+## Other recovery options (only if already available)
+
+These are **not** required. Do not pay for a plan just to export.
+
+- **ZIP export** — Code tab → Export project as ZIP (paid plans). Drop into `imports/base44-export/` if you already have a ZIP.
+- **GitHub sync** — App Dashboard → GitHub → private repo (do not overwrite `Nati101/ThriveLife` until we merge on purpose).
+- **CLI eject** (owner machine, if the CLI works on the current plan):
 
 ```bash
 npm install -g base44@latest
 base44 eject --app-id 6a74e3c6a18bdd8e70a443ae --path ./thrivelife-base44-export --yes
 ```
 
-Schemas copy; **data does not**. Creates a separate Base44 backend project.
+Schemas copy; **data does not**.
+- **Workspace invite** — invite Dev to the Base44 app so they can view the editor too.
 
-### Option 4 — Workspace invite
+Env if we later wire `@base44/sdk` (from Base44 docs; no secrets in git):
 
-Invite Dev to the Base44 app so they can export themselves.
+```bash
+VITE_BASE44_APP_ID=6a74e3c6a18bdd8e70a443ae
+VITE_BASE44_APP_BASE_URL=https://<your-backend>.base44.app
+```
 
 ---
 
@@ -70,9 +78,9 @@ Invite Dev to the Base44 app so they can export themselves.
 |--------|-----|
 | **Vite + React + TypeScript** | Matches Base44’s documented project shape (`vite.config.js`, `src/pages`) |
 | Keep monorepo + shared fixtures | Spec domain types stay usable while waiting on real UI |
-| Backend / auth | Prefer Base44 SDK + auth **once export lands**; else Postgres + Clerk/Auth.js |
+| Backend / auth | Prefer Base44 SDK + auth **once source lands**; else Postgres + Clerk/Auth.js |
 
-When the export arrives: merge pages/components/entities into `apps/web` (or replace the scaffold wholesale if the export is complete enough).
+When pasted source arrives: merge pages/components/entities into `apps/web` (or replace the scaffold wholesale if the tree is complete enough).
 
 ---
 
