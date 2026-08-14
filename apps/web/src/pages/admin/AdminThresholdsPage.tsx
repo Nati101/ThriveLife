@@ -9,9 +9,9 @@ export function AdminThresholdsPage() {
         title="Scoring thresholds"
         description="Provisional expert judgment from spec §4.3. Recalibrate after Stage 1 pilot without a code release."
       />
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card/90">
+      <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-border text-xs uppercase tracking-wide text-muted">
+          <thead className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Dimension</th>
               <th className="px-4 py-3">Level</th>
@@ -27,7 +27,9 @@ export function AdminThresholdsPage() {
                 <td className="px-4 py-3">{row.levelName}</td>
                 <td className="px-4 py-3">{row.minValue ?? "—"}</td>
                 <td className="px-4 py-3">{row.maxValue ?? "—"}</td>
-                <td className="px-4 py-3 text-muted">{row.description}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {row.description}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -24,9 +24,9 @@ export function OnboardingPage() {
         {steps.map((step, index) => (
           <li
             key={step}
-            className="flex gap-3 rounded-xl border border-border bg-card/80 px-4 py-3"
+            className="flex gap-3 rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
           >
-            <span className="font-display text-lg text-brand">{index + 1}</span>
+            <span className="text-lg font-bold text-primary">{index + 1}</span>
             <span className="text-sm leading-relaxed text-foreground">{step}</span>
           </li>
         ))}
@@ -39,10 +39,10 @@ export function OnboardingPage() {
         Age gate (18+) and consent capture land later. This route keeps the
         product loop navigable now.
       </PlaceholderPanel>
-      <p className="mt-6 text-sm text-muted">
+      <p className="mt-6 text-sm text-muted-foreground">
         <Link
           to="/dashboard"
-          className="text-brand underline-offset-2 hover:underline"
+          className="font-medium text-primary underline-offset-2 hover:underline"
         >
           Skip to dashboard
         </Link>

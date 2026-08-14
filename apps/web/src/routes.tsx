@@ -54,8 +54,11 @@ export const appRoutes = [
         path: "*",
         element: (
           <div>
-            <p className="text-muted">Page not found.</p>
-            <Link to="/" className="text-brand underline-offset-2 hover:underline">
+            <p className="text-muted-foreground">Page not found.</p>
+            <Link
+              to="/"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
               Home
             </Link>
           </div>

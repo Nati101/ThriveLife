@@ -27,20 +27,20 @@ export function AdminContentPage() {
         ).map(([label, count]) => (
           <div
             key={label}
-            className="rounded-xl border border-border bg-card/80 px-4 py-3"
+            className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
           >
-            <dt className="text-xs uppercase tracking-wide text-muted">
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground">
               {label}
             </dt>
-            <dd className="font-display text-2xl text-foreground">{count}</dd>
+            <dd className="text-2xl font-bold text-gray-800">{count}</dd>
           </div>
         ))}
       </dl>
-      <ul className="space-y-2 text-sm text-muted">
+      <ul className="space-y-2 text-sm text-muted-foreground">
         {FIXTURE_RECHARGE_ACTIONS.map((action) => (
           <li
             key={action.id}
-            className="rounded-lg border border-border bg-card/70 px-3 py-2"
+            className="rounded-lg border border-border bg-white px-3 py-2 shadow-sm"
           >
             <span className="text-fixture">[FIXTURE]</span> {action.id} ·{" "}
             {action.durationTier} · Plan A / Plan B present

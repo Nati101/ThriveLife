@@ -15,16 +15,16 @@ export function CheckInPage() {
         description="Target under 30 seconds. Four questions + optional note. Notes are text-only in V1 — no NLP."
       />
 
-      <form className="max-w-lg space-y-6 rounded-2xl border border-border bg-card/90 p-5">
+      <form className="max-w-lg space-y-6 rounded-xl border border-border bg-white p-5 shadow-sm">
         <fieldset>
-          <legend className="text-sm font-medium text-foreground">
+          <legend className="text-sm font-semibold text-gray-800">
             1. What mode are you in today?
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {[...DRIVING_MODES, "unsure"].map((mode) => (
               <label
                 key={mode}
-                className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm capitalize has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+                className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-sm capitalize has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
               >
                 <input
                   type="radio"
@@ -40,11 +40,11 @@ export function CheckInPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-sm font-medium text-foreground">
+          <legend className="text-sm font-semibold text-gray-800">
             2. Which battery needs the most support?
           </legend>
           <select
-            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             disabled
             defaultValue=""
           >
@@ -60,7 +60,7 @@ export function CheckInPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-sm font-medium text-foreground">
+          <legend className="text-sm font-semibold text-gray-800">
             3. Recharge version
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -68,7 +68,7 @@ export function CheckInPage() {
               (tier) => (
                 <label
                   key={tier}
-                  className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+                  className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
                 >
                   <input
                     type="radio"
@@ -85,14 +85,14 @@ export function CheckInPage() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-sm font-medium text-foreground">
+          <legend className="text-sm font-semibold text-gray-800">
             4. Did you complete it?
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {Object.entries(CHECK_IN_COMPLETION_LABELS).map(([value, label]) => (
               <label
                 key={value}
-                className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+                className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
               >
                 <input
                   type="radio"
@@ -107,7 +107,7 @@ export function CheckInPage() {
           </div>
         </fieldset>
 
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted-foreground">
           Persistence and Restart Rail arrive in Phase 5. Controls are disabled
           until the data model is wired.
         </p>

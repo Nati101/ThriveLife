@@ -25,7 +25,7 @@ export function AdminPage() {
         description={`Signed in as stub ${roleLabel(user.role)}. Same web app — role-gated routes, not a separate admin deploy.`}
       />
 
-      <div className="mb-8 rounded-xl border border-border bg-card/80 px-4 py-3 text-sm text-muted">
+      <div className="mb-8 rounded-xl border border-border bg-white px-4 py-3 text-sm text-muted-foreground shadow-sm">
         <p>
           Draft: {perms.canDraftContent ? "yes" : "no"} · Review:{" "}
           {perms.canReviewContent ? "yes" : "no"} · Publish:{" "}
@@ -53,10 +53,10 @@ export function AdminPage() {
         </PlaceholderPanel>
       </div>
 
-      <p className="mt-6 text-sm text-muted">
+      <p className="mt-6 text-sm text-muted-foreground">
         <Link
           to="/dev/role"
-          className="text-brand underline-offset-2 hover:underline"
+          className="font-medium text-primary underline-offset-2 hover:underline"
         >
           Switch local role
         </Link>

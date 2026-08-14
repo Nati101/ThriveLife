@@ -17,13 +17,13 @@ export function BatteryScanPage() {
         {FIXTURE_SCAN_ITEMS.map((item) => (
           <li
             key={item.id}
-            className="rounded-xl border border-border bg-card/80 px-4 py-3"
+            className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
           >
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-semibold text-gray-800">
               {item.batteryId ? nameById[item.batteryId] : "Battery"}
             </p>
-            <p className="mt-1 text-sm text-muted">{item.wording}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
+            <p className="mt-1 text-sm text-muted-foreground">{item.wording}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
               {["Low", "Steady", "Full", "Unsure"].map((label) => (
                 <span
                   key={label}

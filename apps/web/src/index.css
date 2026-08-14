@@ -1,51 +1,85 @@
 @import "tailwindcss";
 
+/*
+  ThriveLife theme aligned with Base44 prior app (shadcn-style tokens).
+  Base44 index.css / tailwind.config were not in the export — inferred from JSX.
+*/
 :root {
-  --background: #f3f6f2;
-  --background-accent: #e4ebe3;
-  --foreground: #1c2a22;
-  --muted: #5c6b62;
-  --card: #fbfcf9;
-  --border: #c9d4cb;
-  --brand: #2f6b4f;
-  --brand-soft: #d7e8dc;
-  --accent: #b86b2c;
-  --warn-soft: #f3e6d4;
-  --fixture: #6b5b2f;
-  --font-sans: "Source Sans 3", "Segoe UI", sans-serif;
-  --font-display: "Fraunces", Georgia, serif;
+  --background: #f9fafb;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1e293b;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+  /* Scaffold aliases kept for existing classNames */
+  --brand: var(--primary);
+  --brand-soft: color-mix(in srgb, var(--primary) 12%, white);
+  --warn-soft: #fef3c7;
+  --fixture: #92400e;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-background-accent: var(--background-accent);
   --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
-  --color-accent: var(--accent);
   --color-warn-soft: var(--warn-soft);
   --color-fixture: var(--fixture);
   --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(1200px 500px at 10% -10%, #dfece3 0%, transparent 55%),
-    radial-gradient(900px 420px at 100% 0%, #efe6d8 0%, transparent 50%),
-    var(--background);
+  background-color: color-mix(in srgb, #f9fafb 50%, transparent);
+  background-color: #f9fafb;
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3,
-.font-display {
-  font-family: var(--font-display);
+#root {
+  min-height: 100vh;
 }

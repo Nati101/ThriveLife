@@ -12,7 +12,7 @@ export function WeeklyModeCheckPage() {
         title="Declare this week’s Driving Mode"
         description="User-declared mode is authoritative (stale after 7 days). Suggested mode is advisory only."
       />
-      <section className="max-w-lg rounded-2xl border border-border bg-card/90 p-5">
+      <section className="max-w-lg rounded-xl border border-border bg-white p-5 shadow-sm">
         <p className="text-xs text-fixture">Fixture item</p>
         <p className="mt-2 text-sm text-foreground">
           {FIXTURE_WEEKLY_MODE_ITEM.wording}
@@ -23,18 +23,18 @@ export function WeeklyModeCheckPage() {
               key={mode.mode}
               className="rounded-lg border border-border px-3 py-2"
             >
-              <p className="text-sm font-medium capitalize text-foreground">
+              <p className="text-sm font-semibold capitalize text-gray-800">
                 {mode.mode}
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-xs text-muted-foreground">
                 {mode.meaning} · ceiling {mode.durationCeilingMinutes} min
                 {mode.planBDefault ? " · Plan B default" : ""}
               </p>
             </div>
           ))}
           <div className="rounded-lg border border-border px-3 py-2">
-            <p className="text-sm font-medium text-foreground">Unsure</p>
-            <p className="text-xs text-muted">
+            <p className="text-sm font-semibold text-gray-800">Unsure</p>
+            <p className="text-xs text-muted-foreground">
               Interaction with previous declared mode TBD (QUESTIONS.md #23).
             </p>
           </div>

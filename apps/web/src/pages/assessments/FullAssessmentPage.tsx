@@ -19,7 +19,7 @@ export function FullAssessmentPage() {
         title="Past two weeks · 56 fixture items"
         description="Capacity ×3, Strain ×3, Recharge ×2 per battery. Unsure/N/A store as null — never midpoint."
       />
-      <p className="mb-6 text-sm text-muted">
+      <p className="mb-6 text-sm text-muted-foreground">
         Showing item counts per battery for scaffold verification. Interactive
         session UI arrives in Phase 3.
       </p>
@@ -27,10 +27,10 @@ export function FullAssessmentPage() {
         {byBattery.map(({ battery, items }) => (
           <li
             key={battery.id}
-            className="rounded-xl border border-border bg-card/80 px-4 py-3"
+            className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
           >
-            <p className="font-medium text-foreground">{battery.name}</p>
-            <p className="mt-1 text-sm text-muted">
+            <p className="font-semibold text-gray-800">{battery.name}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
               {items.length} fixture items · first: {items[0]?.wording}
             </p>
           </li>

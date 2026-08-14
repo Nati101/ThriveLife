@@ -24,7 +24,7 @@ export function DevRolePage() {
         title="Switch role"
         description="Real auth will replace this (Base44 auth if we stay on their backend, otherwise Clerk/Auth.js). Cookie-based role switching tests RBAC gates."
       />
-      <p className="mb-6 text-sm text-muted">
+      <p className="mb-6 text-sm text-muted-foreground">
         Current stub session: <strong>{user.displayName}</strong> · role{" "}
         <strong>{ROLE_PERMISSIONS[user.role].label}</strong>
       </p>
@@ -36,14 +36,14 @@ export function DevRolePage() {
             onClick={() => chooseRole(role)}
             className={`rounded-xl border px-4 py-3 text-left transition ${
               user.role === role
-                ? "border-brand bg-brand-soft"
-                : "border-border bg-card/80 hover:border-brand"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-white hover:bg-gray-100"
             }`}
           >
-            <span className="font-medium text-foreground">
+            <span className="font-semibold text-gray-800">
               {ROLE_PERMISSIONS[role].label}
             </span>
-            <span className="mt-1 block text-sm text-muted">
+            <span className="mt-1 block text-sm text-muted-foreground">
               {ROLE_PERMISSIONS[role].description}
             </span>
           </button>
