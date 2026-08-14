@@ -151,4 +151,4 @@ A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite
 7. Recharge dimension: per-battery 2 items vs cross-battery?  
 8. Final banned/allowed language list beyond §5.3 examples?
 9. Role matrix for editor vs reviewer vs admin (who can publish vs draft-only)?
-10. Base44 prior app: can you export ZIP / connect GitHub / invite Dev? Prefer Vite-as-source or port into Next? (see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md))
+10. Base44 prior app: can you export ZIP / connect GitHub / invite Dev? (Repo is already Vite + React; merge export into `apps/web` — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md))

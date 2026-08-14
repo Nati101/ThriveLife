@@ -1,2 +1,2 @@
 # Reserved for background workers / future API split.
-# V1 uses Next.js full-stack routes in `apps/web`.
+# V1 frontend is Vite + React in `apps/web` (no Next.js API routes).
