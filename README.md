@@ -8,7 +8,7 @@ Helps adults notice low energy, identify which Life Battery is most depleted, an
 
 ## Status
 
-Phase 0 web foundation is runnable on **Vite + React + TypeScript** (aligned with the client’s existing **Base44** app). Product engine and real Base44 UI still pending.
+Phase 0–2 foundation is runnable on **Vite + React + TypeScript**. Phase 2 adds a **local JSON content store** + role-gated admin CRUD (fixtures until Joel’s package). Product scoring engine (Phase 3) and full Base44 UI still pending.
 
 **Repo:** https://github.com/Nati101/ThriveLife (private).
 
@@ -30,6 +30,7 @@ The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`
 - **Same app with roles** — `user` | `editor` | `reviewer` | `admin`
 - **Stack:** **Vite + React + TypeScript + Tailwind + React Router** (matches Base44; pivoted from an earlier Next.js scaffold)
 - Shared domain package: `packages/shared`
+- **Phase 2 persistence:** local JSON file (`apps/web/data/content-store.json`) via Vite `/api` middleware — swap to **Canada-region Postgres** later
 - Auth: stub locally; prefer Base44 auth if we stay on their backend, else Clerk/Auth.js
 - Hosting: prefer **Canada** region for assessment data (Legal confirm before beta)
 
@@ -48,21 +49,30 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ```bash
 curl http://127.0.0.1:3000/health.json
+curl http://127.0.0.1:3000/api/health
 npm run typecheck
 npm run build
 ```
 
 ### Local roles (stub auth)
 
-Open **/dev/role** to switch `user` / `editor` / `reviewer` / `admin`. `/admin` is fail-closed for users without content-tool roles; `/admin/thresholds` requires `admin`.
+Open **/dev/role** to switch `user` / `editor` / `reviewer` / `admin`. `/admin` is fail-closed for users without content-tool roles; `/admin/thresholds` requires `admin`. Content API (`/api/content/*`) enforces the same matrix server-side using the `tl_dev_role` cookie.
+
+### Admin CRUD (Phase 2)
+
+1. Set role to **editor** (content) or **admin** (content + thresholds) at `/dev/role`.
+2. Open `/admin/content` — edit constructs, items (version bump on wording change), recharge actions, response scales.
+3. Open `/admin/thresholds` as **admin** — edit §4.3 bands; audit log records changes.
+4. Store file is created on first API hit; admin can **Reset to fixtures** from the content overview.
 
 ## Repo layout
 
 ```
 ThriveLife/
-├── apps/web/             # Vite + React (Base44-aligned)
-├── packages/shared/      # Domain types + fixture content
-├── services/             # Reserved for workers / API later
+├── apps/web/             # Vite + React (Base44-aligned) + /api content middleware
+├── apps/web/data/        # Local content-store.json (gitignored)
+├── packages/shared/      # Domain types + fixture content + seed helper
+├── services/             # Reserved for workers / Postgres API later
 ├── admin/                # Deprecated stub — in-app /admin routes
 ├── vendor/base44-prior/  # Pasted Base44 editor source (free plan)
 └── docs/                 # Spec, tasks, Base44 notes
@@ -77,9 +87,10 @@ ThriveLife/
 | `/dashboard` | Seven-battery placeholder |
 | `/check-in` | Daily Check-In UI stub |
 | `/assessments/*` | Four instruments (fixtures) |
-| `/admin`, `/admin/content`, `/admin/thresholds` | Role-gated content tools |
+| `/admin`, `/admin/content`, `/admin/thresholds` | Role-gated content tools (live CRUD) |
 | `/dev/role` | Local role switcher |
 | `/health.json` | Static health probe |
+| `/api/health`, `/api/content/*` | Local content API (dev server) |
 
 ## Confidentiality
 

@@ -28,8 +28,8 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 ### 0.2 Stack & platform decisions
 - [x] Primary client: **web app** (native mobile deferred)
 - [x] Choose web framework → **Vite + React + TypeScript + Tailwind + React Router** (aligned with Base44; Next.js scaffold replaced)
-- [x] Decide backend → **TBD pending Base44 export** (may keep Base44 SDK/backend) or Postgres API in Phase 2
-- [x] Decide database → Base44 entities if staying on their backend; else **Postgres** (Phase 2)
+- [x] Decide backend → **local JSON content API** (Vite middleware) until Base44 export or Canada-region Postgres
+- [x] Decide database → **JSON file store** for Phase 2 local; Postgres (Canada) later
 - [x] Decide auth provider → stub locally; prefer **Base44 auth** if keeping their backend, else Clerk/Auth.js
 - [x] Decide hosting region → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
@@ -39,8 +39,8 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 
 ### 0.3 Initial app shell (no product logic yet)
 - [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
-- [x] Health probe (`apps/web/public/health.json`); full API when Base44 export or Phase 2 lands
-- [ ] Bootstrap DB migrations tooling
+- [x] Health probe (`apps/web/public/health.json`); content API `/api/health` in Phase 2
+- [ ] Bootstrap DB migrations tooling (JSON store now; SQL migrations with Postgres)
 - [x] Shared types + fixtures in `@thrivelife/shared`
 - [x] Role gate helpers (fail closed on `/admin` routes)
 - [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
@@ -79,58 +79,62 @@ Spec §11.1. Developer should **not** ship real scoring/recommendation with inve
 
 Spec §§10–11.2. Everything else depends on this.
 
+**Local stack (2026-08-14):** JSON file store + Vite `/api` middleware in `apps/web/server/` (seeded from `@thrivelife/shared` fixtures). Postgres (Canada region) deferred — see `services/README.md` and `.env.example`.
+
 ### 2.1 Database schema (Section 10)
-- [ ] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified, **role** (or roles join table for member/editor/reviewer/admin)
-- [ ] `Battery` — name, definition, icon, display_order, book_chapter_ref (seed 7 batteries)
-- [ ] `Construct` — battery_id, dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
-- [ ] `Instrument` — drain_check | battery_scan | full_assessment | weekly_mode_check
-- [ ] `Item` — construct_id, instrument_id, timeframe (moment|two_week), wording, response_scale_id, scoring_direction, version, active
-- [ ] `ResponseScale` — labels JSON, stored_type, min/max — **configurable, not hard-coded**
-- [ ] `AssessmentSession` — user, instrument, started/completed, version, interval_since_previous
-- [ ] `AssessmentResponse` — answer nullable, skipped, per-item timestamp
-- [ ] `BatteryResult` — capacity/strain/recharge scores, battery_state enum, computed_at
-- [ ] `OverchargeFlag` — is_flagged, contributing_batteries JSON, dismissed, dismissed_at
-- [ ] `DrivingMode` — declared_mode, suggested_mode, set_at, source
-- [ ] `Signal` — battery, channel (body|brain|behavior), description, severity, related_recharge_ids
-- [ ] `RechargeAction` — duration_tier, mode_suitability, Plan A/B, accessibility, health_caution, chapter_source
-- [ ] `RechargePlan` — warning_light, plan A/B FKs, cue, support_action, dates
-- [ ] `DailyCheckIn` — mode, battery, recharge_selected, completion enum, note, date
-- [ ] `TuneUp` — interval 30|60|90, outcomes JSON, etc.
-- [ ] `ScoringThreshold` — **admin-editable**; seed provisional values from §4.3
-- [ ] `EscalationEvent` — tier 1|2, message_shown, dismissed
-- [ ] Indexes for user+date queries, session lookups, stale-after windows
-- [ ] Soft-delete / retention fields as privacy model requires (confirm with Legal)
+- [x] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified, **role** (typed in `@thrivelife/shared` schema; stub session until real auth)
+- [x] `Battery` — name, definition, icon, display_order, book_chapter_ref (seed 7 batteries)
+- [x] `Construct` — battery_id, dimension (capacity|strain|recharge), subconstruct, definition, book_chapter_ref
+- [x] `Instrument` — drain_check | battery_scan | full_assessment | weekly_mode_check
+- [x] `Item` — construct_id, instrument_id, timeframe (moment|two_week), wording, response_scale_id, scoring_direction, version, active
+- [x] `ResponseScale` — labels JSON, stored_type, min/max — **configurable, not hard-coded**
+- [x] `AssessmentSession` — typed in schema for Phase 3 (not persisted yet)
+- [x] `AssessmentResponse` — typed in schema for Phase 3 (not persisted yet)
+- [x] `BatteryResult` — typed in schema for Phase 3 (not persisted yet)
+- [x] `OverchargeFlag` — typed in schema for Phase 3 (not persisted yet)
+- [x] `DrivingMode` — typed in schema for Phase 3 (not persisted yet)
+- [x] `Signal` — typed in schema for Phase 3 (not persisted yet)
+- [x] `RechargeAction` — duration_tier, mode_suitability, Plan A/B, accessibility, health_caution, chapter_source
+- [x] `RechargePlan` — typed in schema for Phase 3 (not persisted yet)
+- [x] `DailyCheckIn` — typed in schema for Phase 3 (not persisted yet)
+- [x] `TuneUp` — typed in schema for Phase 3 (not persisted yet)
+- [x] `ScoringThreshold` — **admin-editable**; seed provisional values from §4.3
+- [x] `EscalationEvent` — typed in schema for Phase 3 (not persisted yet)
+- [ ] Indexes for user+date queries, session lookups, stale-after windows (Postgres later)
+- [ ] Soft-delete / retention fields as privacy model requires (confirm with Legal) — items soft-deactivate only for now
 
 ### 2.2 Domain invariants (enforce in DB + service layer)
-- [ ] Never average Capacity/Strain/Recharge into one battery score
-- [ ] Unsure / N/A stored as null — never midpoint
-- [ ] DRAIN Check never writes battery state
-- [ ] Battery Scan never overwrites Full Assessment states
-- [ ] Daily Check-In and Full Assessment never share a chart axis (data model supports separation)
-- [ ] Assessment version stamped on every result session
+- [x] Never average Capacity/Strain/Recharge into one battery score (types keep dimensions separate)
+- [x] Unsure / N/A stored as null — never midpoint (documented on `AssessmentResponse`)
+- [ ] DRAIN Check never writes battery state (Phase 3 engine)
+- [ ] Battery Scan never overwrites Full Assessment states (Phase 3 engine)
+- [x] Daily Check-In and Full Assessment never share a chart axis (data model supports separation)
+- [x] Assessment version stamped on every result session (field on `AssessmentSession` / items)
 
 ### 2.3 Content editor (same web app, role-gated)
-- [ ] Role-based access: editors/reviewers/admins reach content tools inside the **same** web app (no separate admin deploy)
-- [ ] Enforce permissions server-side (editor draft, reviewer approve, admin publish/thresholds — finalize matrix in Phase 0.2)
-- [ ] CRUD batteries, constructs, instruments, items (with versioning UX)
-- [ ] When editing a construct, surface **all timeframe variants** together
-- [ ] CRUD response scales and labels
-- [ ] CRUD scoring thresholds (with audit log of changes) — restrict to appropriate roles
-- [ ] CRUD recharge actions, signals, recommendation lookup rows
+- [x] Role-based access: editors/reviewers/admins reach content tools inside the **same** web app (no separate admin deploy)
+- [x] Enforce permissions server-side (editor draft, reviewer can draft/review per matrix, admin thresholds) — cookie stub role on `/api/*`
+- [x] CRUD batteries, constructs, instruments, items (with versioning UX) — batteries/instruments seed+list; constructs/items/recharge/scales/thresholds mutate
+- [x] When editing a construct, surface **all timeframe variants** together
+- [x] CRUD response scales and labels
+- [x] CRUD scoring thresholds (with audit log of changes) — restrict to appropriate roles
+- [x] CRUD recharge actions (signals / recommendation lookup rows deferred to Phase 4)
 - [ ] CRUD result interpretation / safety / notification copy
 - [ ] Preview mode for instruments
-- [ ] Activate/deactivate items without deleting historical responses
-- [ ] Acceptance: Joel (and other editors/reviewers) can change thresholds and copy **without a code release**
+- [x] Activate/deactivate items without deleting historical responses
+- [x] Acceptance: Joel (and other editors/reviewers) can change thresholds and copy **without a code release** (local JSON store; Postgres later)
 
 ### 2.4 Seed & fixtures
-- [ ] Seed seven batteries + provisional thresholds (§4.3, §4.4 matrix as code rules reading config)
-- [ ] Fixture instruments/items for automated tests
-- [ ] Migration rollback tested
+- [x] Seed seven batteries + provisional thresholds (§4.3, §4.4 matrix as code rules reading config)
+- [x] Fixture instruments/items for automated tests
+- [ ] Migration rollback tested (JSON reset endpoint only; SQL migrations TBD)
 
 ### 2.5 Phase 2 tests
 - [ ] Schema migration tests
 - [ ] Admin permission tests
-- [ ] Threshold read path used by scoring service (no magic numbers in scorer)
+- [ ] Threshold read path used by scoring service (no magic numbers in scorer) — Phase 3
+
+**Remaining Phase 2 gaps:** Postgres + migrations; formal draft→approve→publish workflow UI; interpretation/safety/notification copy CRUD; instrument preview; automated API/permission tests; soft-delete/retention beyond item deactivate.
 
 ---
 

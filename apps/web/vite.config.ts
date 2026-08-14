@@ -3,12 +3,13 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { thrivelifeContentApiPlugin } from "./server/content-api-plugin.ts";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), thrivelifeContentApiPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
@@ -21,5 +22,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "127.0.0.1",
+    strictPort: true,
   },
 });

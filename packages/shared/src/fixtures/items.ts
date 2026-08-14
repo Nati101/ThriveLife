@@ -6,35 +6,57 @@ import type { AssessmentItem, Construct } from "../instruments";
  * Do not treat wording as clinical claims or ship as Joel-authored copy.
  */
 
-export const FIXTURE_CONSTRUCTS: Construct[] = BATTERY_IDS.flatMap((batteryId) => [
+export const FIXTURE_CONSTRUCTS: Construct[] = [
   {
-    id: `construct_${batteryId}_capacity`,
-    batteryId,
-    dimension: "capacity" as const,
+    id: "construct_drain_signal",
+    batteryId: "cross_cutting",
+    dimension: "drain",
     subconstruct: null,
-    definition: `[FIXTURE] Capacity construct for ${batteryId}`,
+    definition:
+      "[FIXTURE] Cross-battery DRAIN warning-light signals (session intervention only).",
     bookChapterRef: null,
     isFixture: true,
   },
   {
-    id: `construct_${batteryId}_strain`,
-    batteryId,
-    dimension: "strain" as const,
+    id: "construct_driving_mode",
+    batteryId: "cross_cutting",
+    dimension: "mode",
     subconstruct: null,
-    definition: `[FIXTURE] Strain construct for ${batteryId}`,
+    definition:
+      "[FIXTURE] User-declared Driving Mode construct for Weekly Mode Check.",
     bookChapterRef: null,
     isFixture: true,
   },
-  {
-    id: `construct_${batteryId}_recharge`,
-    batteryId,
-    dimension: "recharge" as const,
-    subconstruct: null,
-    definition: `[FIXTURE] Recharge Skill construct for ${batteryId}`,
-    bookChapterRef: null,
-    isFixture: true,
-  },
-]);
+  ...BATTERY_IDS.flatMap((batteryId) => [
+    {
+      id: `construct_${batteryId}_capacity`,
+      batteryId,
+      dimension: "capacity" as const,
+      subconstruct: null,
+      definition: `[FIXTURE] Capacity construct for ${batteryId}`,
+      bookChapterRef: null,
+      isFixture: true,
+    },
+    {
+      id: `construct_${batteryId}_strain`,
+      batteryId,
+      dimension: "strain" as const,
+      subconstruct: null,
+      definition: `[FIXTURE] Strain construct for ${batteryId}`,
+      bookChapterRef: null,
+      isFixture: true,
+    },
+    {
+      id: `construct_${batteryId}_recharge`,
+      batteryId,
+      dimension: "recharge" as const,
+      subconstruct: null,
+      definition: `[FIXTURE] Recharge Skill construct for ${batteryId}`,
+      bookChapterRef: null,
+      isFixture: true,
+    },
+  ]),
+];
 
 const DRAIN_PROMPTS = [
   "Demands feel higher than what I can currently hold",

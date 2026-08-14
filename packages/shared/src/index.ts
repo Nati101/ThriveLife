@@ -4,6 +4,8 @@ export * from "./instruments";
 export * from "./driving-mode";
 export * from "./recharge";
 export * from "./scoring";
+export * from "./schema";
+export * from "./content-store";
 
 export { FIXTURE_BATTERIES } from "./fixtures/batteries";
 export {

@@ -40,16 +40,16 @@ export function AdminPage() {
           href="/admin/content"
           linkLabel="Open content"
         >
-          Batteries, constructs, instruments, items, recharge actions — fixture
-          data until Joel’s package lands.
+          Live CRUD for constructs, items, recharge actions, and response
+          scales — seeded from fixtures until Joel’s package lands.
         </PlaceholderPanel>
         <PlaceholderPanel
           title="Scoring thresholds"
           href="/admin/thresholds"
           linkLabel="Open thresholds"
         >
-          Admin-only. Provisional §4.3 values must stay editable — never
-          hard-coded in scorers.
+          Admin-only editable §4.3 values with audit log. Never hard-code bounds
+          in scorers.
         </PlaceholderPanel>
       </div>
 

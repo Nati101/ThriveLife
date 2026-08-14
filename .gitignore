@@ -39,6 +39,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example
+.cursor/
 *.swp
 *.swo
 
@@ -67,3 +68,9 @@ temp/
 .cache/
 *.local
 imports/
+
+# Local Phase 2 content store (seeded from fixtures at runtime)
+apps/web/data/content-store.json
+*.db
+*.sqlite
+
