@@ -1,28 +1,70 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FIXTURE_ALL_ITEMS, FIXTURE_INSTRUMENTS } from "@thrivelife/shared";
+import type { InstrumentDefinition, InstrumentId } from "@thrivelife/shared";
 import { PageHeader } from "@/components/PageHeader";
 
-const routes: Record<string, string> = {
+const routes: Record<InstrumentId, string> = {
   drain_check: "/assessments/drain-check",
   battery_scan: "/assessments/battery-scan",
   full_assessment: "/assessments/full-assessment",
   weekly_mode_check: "/assessments/weekly-mode-check",
 };
 
+type Row = {
+  instrument: InstrumentDefinition;
+  itemCount: number;
+};
+
 export function AssessmentsPage() {
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const ids = Object.keys(routes) as InstrumentId[];
+        const loaded = await Promise.all(
+          ids.map(async (id) => {
+            const res = await fetch(`/api/assessments/instruments/${id}`, {
+              credentials: "same-origin",
+            });
+            if (!res.ok) throw new Error(`Failed to load ${id}`);
+            const data = (await res.json()) as {
+              instrument: InstrumentDefinition;
+              items: unknown[];
+            };
+            return {
+              instrument: data.instrument,
+              itemCount: data.items.length,
+            };
+          }),
+        );
+        if (!cancelled) setRows(loaded);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div>
       <PageHeader
         eyebrow="Instruments"
         title="Four coordinated assessments"
-        description="One authoritative source per dashboard element. No blending between instruments."
+        description="One authoritative source per dashboard element. No blending between instruments. Items load from the JSON content store."
       />
-      <ul className="space-y-4">
-        {FIXTURE_INSTRUMENTS.map((instrument) => {
-          const count = FIXTURE_ALL_ITEMS.filter(
-            (item) => item.instrumentId === instrument.id,
-          ).length;
-          return (
+      {error ? <p className="mb-4 text-sm text-red-700">{error}</p> : null}
+      {!rows ? (
+        <p className="text-sm text-muted-foreground">Loading instruments…</p>
+      ) : (
+        <ul className="space-y-4">
+          {rows.map(({ instrument, itemCount }) => (
             <li
               key={instrument.id}
               className="rounded-xl border border-border bg-white p-5 shadow-sm"
@@ -36,7 +78,7 @@ export function AssessmentsPage() {
                     {instrument.description}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {count} fixture items · {instrument.completionSecondsHint} ·{" "}
+                    {itemCount} active items · {instrument.completionSecondsHint} ·{" "}
                     {instrument.dashboardAuthority}
                   </p>
                 </div>
@@ -48,9 +90,9 @@ export function AssessmentsPage() {
                 </Link>
               </div>
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

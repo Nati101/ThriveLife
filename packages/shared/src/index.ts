@@ -6,6 +6,8 @@ export * from "./recharge";
 export * from "./scoring";
 export * from "./schema";
 export * from "./content-store";
+export * from "./assessment-scoring";
+export * from "./assessment-authority";
 
 export { FIXTURE_BATTERIES } from "./fixtures/batteries";
 export {

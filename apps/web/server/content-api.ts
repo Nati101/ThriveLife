@@ -220,6 +220,8 @@ export async function handleContentApi(
       sendJson(res, 200, {
         ok: true,
         store: "json-file",
+        contentStore: "apps/web/data/content-store.json",
+        sessionsStore: "apps/web/data/sessions.json",
         note: "Postgres (Canada region) planned later",
       });
       return true;

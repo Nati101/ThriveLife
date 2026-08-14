@@ -26,14 +26,23 @@ export type UserProfile = {
   softDeletedAt: string | null;
 };
 
+export type AssessmentSessionStatus =
+  | "in_progress"
+  | "completed"
+  | "abandoned";
+
 export type AssessmentSession = {
   id: string;
   userId: string;
   instrumentId: InstrumentId;
   startedAt: string;
   completedAt: string | null;
+  /** Max item version stamped on the session at start. */
   version: number;
   intervalSincePreviousDays: number | null;
+  status: AssessmentSessionStatus;
+  /** Instrument-specific result payload (never blends Scan + Full Assessment). */
+  resultSummary: Record<string, unknown> | null;
 };
 
 export type AssessmentResponse = {

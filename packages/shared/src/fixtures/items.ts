@@ -119,19 +119,25 @@ export const FIXTURE_FULL_ASSESSMENT_ITEMS: AssessmentItem[] = BATTERY_IDS.flatM
       active: true,
       isFixture: true,
     }));
-    const strain = [1, 2, 3].map((n) => ({
-      id: `fixture_full_${batteryId}_strain_${n}`,
-      constructId: `construct_${batteryId}_strain`,
-      instrumentId: "full_assessment" as const,
-      batteryId,
-      timeframe: "two_week" as const,
-      wording: `[FIXTURE] Over the past two weeks, ${batteryId.replaceAll("_", " ")} strain item ${n}`,
-      responseScaleId: "scale_frequency_0_4",
-      scoringDirection: "higher_is_more_strain" as const,
-      version: 1,
-      active: true,
-      isFixture: true,
-    }));
+    const strain = [1, 2, 3].map((n) => {
+      const isDifficultyStopping =
+        batteryId === "work_daily_purpose" && n === 3;
+      return {
+        id: `fixture_full_${batteryId}_strain_${n}`,
+        constructId: `construct_${batteryId}_strain`,
+        instrumentId: "full_assessment" as const,
+        batteryId,
+        timeframe: "two_week" as const,
+        wording: isDifficultyStopping
+          ? "[FIXTURE] Over the past two weeks, I have had difficulty stopping work even when depleted"
+          : `[FIXTURE] Over the past two weeks, ${batteryId.replaceAll("_", " ")} strain item ${n}`,
+        responseScaleId: "scale_frequency_0_4",
+        scoringDirection: "higher_is_more_strain" as const,
+        version: 1,
+        active: true,
+        isFixture: true,
+      };
+    });
     const recharge = [1, 2].map((n) => ({
       id: `fixture_full_${batteryId}_recharge_${n}`,
       constructId: `construct_${batteryId}_recharge`,

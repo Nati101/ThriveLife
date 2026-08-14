@@ -69,8 +69,9 @@ temp/
 *.local
 imports/
 
-# Local Phase 2 content store (seeded from fixtures at runtime)
+# Local Phase 2/3 JSON stores (seeded / written at runtime)
 apps/web/data/content-store.json
+apps/web/data/sessions.json
 *.db
 *.sqlite
 

@@ -106,8 +106,8 @@ Spec §§10–11.2. Everything else depends on this.
 ### 2.2 Domain invariants (enforce in DB + service layer)
 - [x] Never average Capacity/Strain/Recharge into one battery score (types keep dimensions separate)
 - [x] Unsure / N/A stored as null — never midpoint (documented on `AssessmentResponse`)
-- [ ] DRAIN Check never writes battery state (Phase 3 engine)
-- [ ] Battery Scan never overwrites Full Assessment states (Phase 3 engine)
+- [x] DRAIN Check never writes battery state (Phase 3 engine)
+- [x] Battery Scan never overwrites Full Assessment states (Phase 3 engine)
 - [x] Daily Check-In and Full Assessment never share a chart axis (data model supports separation)
 - [x] Assessment version stamped on every result session (field on `AssessmentSession` / items)
 
@@ -132,7 +132,7 @@ Spec §§10–11.2. Everything else depends on this.
 ### 2.5 Phase 2 tests
 - [ ] Schema migration tests
 - [ ] Admin permission tests
-- [ ] Threshold read path used by scoring service (no magic numbers in scorer) — Phase 3
+- [x] Threshold read path used by scoring service (no magic numbers in scorer) — Phase 3
 
 **Remaining Phase 2 gaps (content/admin — not DB cutover):** formal draft→approve→publish workflow UI; interpretation/safety/notification copy CRUD; instrument preview; automated API/permission tests; soft-delete/retention beyond item deactivate. **Deferred (not a Phase 2 blocker):** Canada-region generic Postgres + SQL migrations when assessment sessions / beta need persistence beyond the local JSON store.
 
@@ -143,66 +143,74 @@ Spec §§10–11.2. Everything else depends on this.
 Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures until then.
 
 ### 3.1 Shared assessment session framework
-- [ ] Start/resume/complete session API
-- [ ] Persist per-item responses with timestamps
-- [ ] Support skip / N/A / Unsure
+- [x] Start/resume/complete session API
+- [x] Persist per-item responses with timestamps
+- [x] Support skip / N/A / Unsure
 - [ ] Abandonment detection hooks (dwell time → Phase 8)
-- [ ] Interval calculation since previous Full Assessment
+- [x] Interval calculation since previous Full Assessment
 
 ### 3.2 DRAIN Check (~10 items, Yes/Somewhat/No → 2/1/0)
-- [ ] Instrument UI + API
-- [ ] Session-only intervention trigger wiring (does **not** update battery states)
-- [ ] Maps to recommendation priority 1 when completed this session (§8.1)
+- [x] Instrument UI + API
+- [x] Session-only intervention trigger wiring (does **not** update battery states)
+- [x] Maps to recommendation priority 1 when completed this session (§8.1)
 
 ### 3.3 Battery Scan (7 + 1 follow-up)
-- [ ] Rate each battery Low / Steady / Full / Unsure
-- [ ] Unsure → one disambiguating follow-up (“closer to Low or Steady?”); else missing
-- [ ] Writes “today’s recommended battery” authority (stale after 18 hours)
-- [ ] Does not overwrite Full Assessment states
+- [x] Rate each battery Low / Steady / Full / Unsure
+- [x] Unsure → one disambiguating follow-up (“closer to Low or Steady?”); else missing
+- [x] Writes “today’s recommended battery” authority (stale after 18 hours)
+- [x] Does not overwrite Full Assessment states
 
 ### 3.4 Full Assessment (56 items: 8×7 — Capacity×3, Strain×3, Recharge×2)
-- [ ] 0–4 frequency + N/A; show number + word label
-- [ ] Instructions: past two weeks recall window
-- [ ] Hard floor: block re-admin &lt; 14 days with prescribed copy (§7.3)
-- [ ] Store `interval_days` / `interval_since_previous`
-- [ ] Scoring (§4):
-  - [ ] Mean of completed items per dimension
-  - [ ] Dimension score only if ≥2 of 3 (or 2 of 2 Recharge); else `insufficient_data`
-  - [ ] Battery state only if all three dimensions available
-  - [ ] Partial dashboard if ≥5 of 7 batteries have states; name incomplete batteries
-  - [ ] Track N/A rates for pilot (flag items &gt;15% N/A)
-- [ ] Apply **ScoringThreshold** config → Low/Moderate/Strong (Capacity, Recharge) and Low/Rising/Elevated (Strain)
-- [ ] Apply **Battery State Matrix** (§4.4) → Well Charged | Steady | Strained but Functioning | Low
-- [ ] Persist `BatteryResult` rows + assessment version
+- [x] 0–4 frequency + N/A; show number + word label
+- [x] Instructions: past two weeks recall window
+- [x] Hard floor: block re-admin &lt; 14 days with prescribed copy (§7.3)
+- [x] Store `interval_days` / `interval_since_previous`
+- [x] Scoring (§4):
+  - [x] Mean of completed items per dimension
+  - [x] Dimension score only if ≥2 of 3 (or 2 of 2 Recharge); else `insufficient_data`
+  - [x] Battery state only if all three dimensions available
+  - [x] Partial dashboard if ≥5 of 7 batteries have states; name incomplete batteries
+  - [x] Track N/A item IDs per session for pilot (`naItemIds`; aggregate &gt;15% rewrite flag not built yet)
+- [x] Apply **ScoringThreshold** config → Low/Moderate/Strong (Capacity, Recharge) and Low/Rising/Elevated (Strain)
+- [x] Apply **Battery State Matrix** (§4.4) → Well Charged | Steady | Strained but Functioning | Low
+- [x] Persist `BatteryResult` rows + assessment version
 
 ### 3.5 Overcharge flag (§5)
-- [ ] Compute after all seven states resolved
-- [ ] Conditions 1–4 from config where possible (thresholds admin-editable)
-- [ ] Store contributing batteries list
-- [ ] Messaging constraints (approved pattern; banned words)
-- [ ] Dismissible; do not re-raise until next Full Assessment
-- [ ] Not a red alert; observation + reflection + starting battery from depleted set
+- [x] Compute after all seven states resolved
+- [x] Conditions 1–4 from config where possible (thresholds admin-editable)
+- [x] Store contributing batteries list
+- [x] Messaging constraints (approved pattern; banned words)
+- [x] Dismissible; do not re-raise until next Full Assessment
+- [x] Not a red alert; observation + reflection + starting battery from depleted set
 
 ### 3.6 Driving Mode (§6)
-- [ ] Weekly Mode Check instrument (Green/Yellow/Red/Unsure)
-- [ ] User-declared mode is authoritative (stale after 7 days)
-- [ ] Compute **suggested** mode via signal-count rule (advisory only — never silent write)
-  - [ ] Battery “showing signal” = ≥2 of 3 Strain items ≥ 3
-  - [ ] 0–1 → Green, 2–3 → Yellow, 4+ → Red
-- [ ] Log full signal-count distribution for pilot recalibration
-- [ ] Mode effects: duration ceilings and Plan A/B behavior (§6.3)
+- [x] Weekly Mode Check instrument (Green/Yellow/Red/Unsure)
+- [x] User-declared mode is authoritative (stale after 7 days)
+- [x] Compute **suggested** mode via signal-count rule (advisory only — never silent write)
+  - [x] Battery “showing signal” = ≥2 of 3 Strain items ≥ 3
+  - [x] 0–1 → Green, 2–3 → Yellow, 4+ → Red
+- [x] Log full signal-count distribution for pilot recalibration
+- [ ] Mode effects: duration ceilings and Plan A/B behavior (§6.3) — deferred to Phase 4 recommendation engine
 
 ### 3.7 Authority & staleness service (§3.2)
-- [ ] Central resolver: for each dashboard element, return value | stale | missing + prompt
-- [ ] Unit tests proving no cross-instrument writes
+- [x] Central resolver: for each dashboard element, return value | stale | missing + prompt
+- [x] Unit tests proving no cross-instrument writes
 
 ### 3.8 Phase 3 tests (critical)
-- [ ] Table-driven tests for battery state matrix (all rows in §4.4)
-- [ ] Missing-data / insufficient_data cases
-- [ ] Overcharge true/false edge cases (esp. healthy high engagement vs condition 4)
-- [ ] Suggested mode signal-count boundaries
-- [ ] 14-day Full Assessment lockout
-- [ ] Version stamp + no cross-version numeric compare helpers
+- [x] Table-driven tests for battery state matrix (all rows in §4.4)
+- [x] Missing-data / insufficient_data cases
+- [x] Overcharge true/false edge cases (esp. healthy high engagement vs condition 4)
+- [x] Suggested mode signal-count boundaries
+- [x] 14-day Full Assessment lockout
+- [x] Version stamp + no cross-version numeric compare helpers
+
+**Phase 3 remaining gaps (honest):**
+- DRAIN items still sit on `construct_drain_signal` (`dimension: "drain"`) — **not** linked as Strain timeframe variants (§3.3 / audit gap). Scores are real engine math on fixtures, not Joel-authored constructs.
+- Abandonment / dwell-time hooks deferred to Phase 8.
+- Mode duration ceilings / Plan A-B filtering belong to Phase 4 recommendation engine (not wired into recharge menus yet).
+- N/A rate &gt;15% flagging is tracked per session (`naItemIds`); aggregate pilot dashboard not built.
+- Dashboard page still shows placeholder rings — authority API exists at `/api/assessments/me/authority` for Phase 4 to consume.
+- Difficulty-stopping overcharge item is fixture-id keyed (`fixture_full_work_daily_purpose_strain_3`); Joel content must preserve a tagged item or admin config override.
 
 ---
 
