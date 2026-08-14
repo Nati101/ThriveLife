@@ -11,7 +11,7 @@ Another developer should be able to execute from this list without re-reading th
 
 ## Phase 0 — Project foundation (Dev)
 
-Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client; solo private GitHub repo (org transfer later); **same app with roles** for editors/reviewers (not a separate admin app). See [QUESTIONS.md](./QUESTIONS.md) Decisions locked.
+Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo (org transfer later); **same app with roles** for editors/reviewers; **local JSON content store** (not Supabase; Postgres later when sessions/beta need it — not a Phase 0/2 blocker). See [QUESTIONS.md](./QUESTIONS.md) Decisions locked.
 
 ### 0.1 Repository & engineering hygiene
 - [x] Create private GitHub repo under solo Dev account (`Nati101/ThriveLife`)
@@ -28,9 +28,9 @@ Scaffolding, tooling, and remaining stack choices. **Locked:** web-first client;
 ### 0.2 Stack & platform decisions
 - [x] Primary client: **web app** (native mobile deferred)
 - [x] Choose web framework → **Vite + React + TypeScript + Tailwind + React Router** (aligned with Base44; Next.js scaffold replaced)
-- [x] Decide backend → **local JSON content API** (Vite middleware) until Base44 export or Canada-region Postgres
-- [x] Decide database → **JSON file store** for Phase 2 local; Postgres (Canada) later
-- [x] Decide auth provider → stub locally; prefer **Base44 auth** if keeping their backend, else Clerk/Auth.js
+- [x] Decide backend → **local JSON content API** (Vite middleware) — locked for now (**not** Supabase)
+- [x] Decide database → **JSON file store** for Phase 2; **Canada-region generic Postgres** later when assessment sessions / beta need it (**not** a Phase 0/2 blocker; not Supabase)
+- [x] Decide auth provider → stub locally; prefer **Base44 auth** if keeping their backend, else Clerk/Auth.js — **no Supabase Auth**
 - [x] Decide hosting region → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
 - [x] Define role matrix: `user` | `editor` | `reviewer` | `admin` — draft in `@thrivelife/shared`
@@ -134,7 +134,7 @@ Spec §§10–11.2. Everything else depends on this.
 - [ ] Admin permission tests
 - [ ] Threshold read path used by scoring service (no magic numbers in scorer) — Phase 3
 
-**Remaining Phase 2 gaps:** Postgres + migrations; formal draft→approve→publish workflow UI; interpretation/safety/notification copy CRUD; instrument preview; automated API/permission tests; soft-delete/retention beyond item deactivate.
+**Remaining Phase 2 gaps (content/admin — not DB cutover):** formal draft→approve→publish workflow UI; interpretation/safety/notification copy CRUD; instrument preview; automated API/permission tests; soft-delete/retention beyond item deactivate. **Deferred (not a Phase 2 blocker):** Canada-region generic Postgres + SQL migrations when assessment sessions / beta need persistence beyond the local JSON store.
 
 ---
 
@@ -422,8 +422,8 @@ From Part 14 — not “features” but release blockers for public launch.
 
 ## Suggested execution order for a solo developer
 
-1. Phase 0 remaining web stack choices + shell + roles middleware  
-2. Phase 2 schema + role-gated content tools + fixture content  
+1. Phase 0 shell + roles middleware (stack/persistence locked: Vite + JSON store)  
+2. Phase 2 content model + role-gated tools + fixtures (Postgres deferred)  
 3. Phase 3 engine with fixtures (parallel Joel content)  
 4. Phase 4 dashboard + lookup recommendations (needs recharge library)  
 5. Phase 5 daily loop  

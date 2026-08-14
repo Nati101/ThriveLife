@@ -80,14 +80,14 @@ The specification defines domain architecture and product behavior, not a specif
 | Repo ownership | Solo Dev private repo now; **transfer to a GitHub org later** |
 | Content tools | **Same web app with roles** (member / editor / reviewer / admin) — not a separate admin app |
 
-**Additional stack decisions (2026-08-07):** **Vite + React + TypeScript + Tailwind** (`apps/web`) to match the client’s Base44 app (pivoted from Next.js); npm workspaces; backend TBD pending Base44 export; prefer Canada-region hosting — see [`QUESTIONS.md`](./QUESTIONS.md) and [`BASE44-PRIOR-APP.md`](./BASE44-PRIOR-APP.md).
+**Additional stack decisions:** **Vite + React + TypeScript + Tailwind** (`apps/web`) to match the client’s Base44 app (pivoted from Next.js); npm workspaces; **local JSON content store** for Phase 2 (not a blocker; **not** Supabase); later **Canada-region generic Postgres** when assessment sessions / beta need it; prefer Canada-region hosting; auth stub locally (**no Supabase Auth**) — see [`QUESTIONS.md`](./QUESTIONS.md) D6–D8 and [`BASE44-PRIOR-APP.md`](./BASE44-PRIOR-APP.md).
 
 **Implied technical requirements:**
 
 - User accounts, consent, age verification, **RBAC** for content editors/reviewers  
-- Relational data model (Section 10 objects)  
+- Section 10–shaped domain model (JSON file store now; Postgres later for sessions / beta)  
 - Admin-editable config (especially `scoring_thresholds`) via role-gated UI  
-- Auth + privacy controls (export/delete)  
+- Auth + privacy controls (export/delete) — not Supabase Auth  
 - Analytics for pilot (item timing, dwell, abandonment)  
 - No hard-coded scoring thresholds  
 - Responsive web UX (mobile browsers matter even without native apps)  

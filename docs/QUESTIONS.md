@@ -16,8 +16,8 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 | D3 | Admin / editors | **Same web app with roles** (e.g. user, editor, reviewer, admin) — not a separate admin app | 2026-08-07 |
 | D4 | Web framework | **Vite + React + TypeScript + Tailwind** (`apps/web`) — matches Base44; replaced earlier Next.js scaffold | 2026-08-07 |
 | D5 | Monorepo | **npm workspaces** — `apps/web`, `packages/shared`, `services/` reserved | 2026-08-07 |
-| D6 | Backend | **Pending Base44 export** — may use Base44 SDK/backend first; else Postgres API in Phase 2 | 2026-08-07 |
-| D7 | Auth provider | Stub locally; prefer Base44 auth if keeping their backend, else Clerk/Auth.js | 2026-08-07 |
+| D6 | Backend / content API | **Local JSON content store** (`apps/web/data/content-store.json` + Vite `/api` middleware) for now — **not a blocker**. **Not** using the Supabase platform. When assessment sessions / beta need it: **generic Postgres** in a Canada region (not Supabase-branded BaaS). | 2026-08-14 |
+| D7 | Auth provider | Stub locally; prefer Base44 auth if keeping their backend, else Clerk/Auth.js — **no Supabase Auth** | 2026-08-07 |
 | D8 | Hosting region | **Prefer Canada** for assessment data; Legal confirm before beta | 2026-08-07 |
 | D9 | Prior client app | Base44 app `6a74e3c6a18bdd8e70a443ae` — **paste from editor** (free plan; see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) | 2026-08-14 |
 
@@ -33,9 +33,9 @@ A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite
 
 ### Platform & architecture
 1. ~~**What is the primary client for V1?**~~ → **Decided: web app** (see D1).
-2. ~~**What backend/database/hosting stack should we use?**~~ → **Frontend: Vite/React (Base44-aligned).** Backend TBD pending Base44 export (keep Base44 vs Postgres). Prefer Canada hosting (D4–D6, D8).
+2. ~~**What backend/database/hosting stack should we use?**~~ → **Frontend: Vite/React (Base44-aligned).** **Persistence: local JSON content store now** (not a blocker). **Not** Supabase. Later: **Canada-region generic Postgres** when assessment sessions / beta need it. Prefer Canada hosting (D4–D6, D8).
 3. ~~**Who owns the GitHub org / cloud accounts?**~~ → **Decided: solo Dev account now; org migration later** (see D2). Apple/Google store accounts N/A for web-first V1; cloud billing owner still TBD.
-4. **Auth method?** Stub locally. Prefer Base44 auth if staying on their backend; else Clerk/Auth.js (D7). Exact sign-in methods TBD.
+4. **Auth method?** Stub locally. Prefer Base44 auth if staying on their backend; else Clerk/Auth.js — **no Supabase Auth** (D7). Exact sign-in methods TBD.
 4b. **Base44 source:** Client pastes editor files of app `6a74e3c6a18bdd8e70a443ae` into `vendor/base44-prior/` (free plan) — see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md).
 5. ~~**Admin editor audience / same app vs separate?**~~ → **Decided: same app with roles** supporting editors/reviewers (see D3). Exact role matrix drafted in code; finalize with Joel before beta.
 
@@ -111,7 +111,7 @@ A prior client exists in **Base44** (Vite). This repo’s scaffold is now **Vite
 | # | Assumption | Impact if wrong |
 |---|------------|-----------------|
 | A1 | V1 is a **private** GitHub repo under the solo Dev account (**confirmed**); transfer to org later | Schedule org transfer when ready |
-| A2 | **Postgres**-style relational DB matches Section 10; thresholds are data not code | Stack choice |
+| A2 | Domain model stays Section 10–shaped; **JSON store now**, **generic Canada-region Postgres later** (not Supabase); thresholds are data not code | Timing of Postgres cutover only |
 | A3 | Build **one web app** (member + role-gated content tools) + API — not a separate admin app, not no-code | Architecture |
 | A4 | Pilot is **invite-only**; native stores deferred (web-first) | Auth, gating, CI/CD |
 | A5 | **English (Canada)** only for V1 | i18n architecture |

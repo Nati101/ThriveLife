@@ -30,8 +30,8 @@ The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`
 - **Same app with roles** — `user` | `editor` | `reviewer` | `admin`
 - **Stack:** **Vite + React + TypeScript + Tailwind + React Router** (matches Base44; pivoted from an earlier Next.js scaffold)
 - Shared domain package: `packages/shared`
-- **Phase 2 persistence:** local JSON file (`apps/web/data/content-store.json`) via Vite `/api` middleware — swap to **Canada-region Postgres** later
-- Auth: stub locally; prefer Base44 auth if we stay on their backend, else Clerk/Auth.js
+- **Phase 2 persistence:** local JSON file (`apps/web/data/content-store.json`) via Vite `/api` middleware — **not a blocker**; **not** Supabase. Later: **Canada-region generic Postgres** when assessment sessions / beta need it
+- Auth: stub locally; prefer Base44 auth if we stay on their backend, else Clerk/Auth.js — **no Supabase Auth**
 - Hosting: prefer **Canada** region for assessment data (Legal confirm before beta)
 
 ## Run locally
