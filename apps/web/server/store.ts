@@ -15,14 +15,20 @@ import {
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 export const CONTENT_DATA_DIR = path.resolve(rootDir, "../data");
-export const CONTENT_STORE_PATH = path.join(
-  CONTENT_DATA_DIR,
-  "content-store.json",
-);
+
+export function contentStorePath(): string {
+  if (process.env.TL_CONTENT_STORE_PATH) {
+    return path.resolve(process.env.TL_CONTENT_STORE_PATH);
+  }
+  return path.join(CONTENT_DATA_DIR, "content-store.json");
+}
+
+export const CONTENT_STORE_PATH = contentStorePath();
 
 function ensureDir(): void {
-  if (!fs.existsSync(CONTENT_DATA_DIR)) {
-    fs.mkdirSync(CONTENT_DATA_DIR, { recursive: true });
+  const dir = path.dirname(contentStorePath());
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -59,12 +65,13 @@ function migrateContentDocument(raw: Partial<ContentDocument>): ContentDocument 
 
 export function readContentDocument(): ContentDocument {
   ensureDir();
-  if (!fs.existsSync(CONTENT_STORE_PATH)) {
+  const storePath = contentStorePath();
+  if (!fs.existsSync(storePath)) {
     const seeded = createSeedContentDocument();
     writeContentDocument(seeded);
     return seeded;
   }
-  const raw = fs.readFileSync(CONTENT_STORE_PATH, "utf8");
+  const raw = fs.readFileSync(storePath, "utf8");
   const parsed = JSON.parse(raw) as Partial<ContentDocument>;
   const migrated = migrateContentDocument(parsed);
   if (
@@ -84,10 +91,13 @@ export function writeContentDocument(doc: ContentDocument): void {
     updatedAt: new Date().toISOString(),
   };
   fs.writeFileSync(
-    CONTENT_STORE_PATH,
+    contentStorePath(),
     `${JSON.stringify(next, null, 2)}\n`,
     "utf8",
   );
+  void import("./cloud-persist.ts")
+    .then((mod) => mod.scheduleCloudPersist(() => mod.persistContentToCloud(next)))
+    .catch(() => undefined);
 }
 
 export function resetContentDocument(): ContentDocument {

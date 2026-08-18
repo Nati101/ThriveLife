@@ -9,7 +9,6 @@ import {
   canAccessContentTools,
   canTransitionWorkflow,
   hasPermission,
-  isRole,
   ROLE_PERMISSIONS,
   type AssessmentItem,
   type Construct,
@@ -31,11 +30,11 @@ import {
   resetContentDocument,
   touchContentDocument,
 } from "./store";
-
-const DEV_ROLE_COOKIE = "tl_dev_role";
-const STUB_USER_ID = "stub-user-local";
-
-type JsonBody = Record<string, unknown> | unknown[] | string | number | boolean | null;
+import {
+  STUB_USER_ID,
+  sendJson,
+  roleFromRequest,
+} from "./http";
 
 type MutableCollection = Exclude<
   keyof ContentDocument,
@@ -108,36 +107,6 @@ function assignCollection(
     default:
       break;
   }
-}
-
-function sendJson(
-  res: ServerResponse,
-  status: number,
-  body: JsonBody,
-): void {
-  const payload = JSON.stringify(body);
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(payload);
-}
-
-function parseCookies(header: string | undefined): Record<string, string> {
-  if (!header) return {};
-  const out: Record<string, string> = {};
-  for (const part of header.split(";")) {
-    const [rawKey, ...rest] = part.trim().split("=");
-    if (!rawKey) continue;
-    out[rawKey] = decodeURIComponent(rest.join("=") || "");
-  }
-  return out;
-}
-
-function roleFromRequest(req: IncomingMessage): Role | null {
-  const cookies = parseCookies(req.headers.cookie);
-  const raw = cookies[DEV_ROLE_COOKIE];
-  if (!raw || !isRole(raw)) return null;
-  return raw;
 }
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
@@ -248,6 +217,15 @@ export async function handleContentApi(
         sessionsStore: "apps/web/data/sessions.json",
         supabaseUrl: process.env.VITE_SUPABASE_URL ?? null,
         region: "ca-central-1",
+        cloudPersist: Boolean(
+          process.env.SUPABASE_SERVICE_ROLE_KEY &&
+            (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) &&
+            process.env.TL_DISABLE_CLOUD !== "1",
+        ),
+        mailer: {
+          resend: Boolean(process.env.RESEND_API_KEY?.trim()),
+          smtpNoted: Boolean(process.env.SMTP_URL?.trim()),
+        },
       });
       return true;
     }

@@ -75,3 +75,8 @@ apps/web/data/sessions.json
 *.db
 *.sqlite
 
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+

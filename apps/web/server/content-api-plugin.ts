@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
+import { rateLimit } from "./rate-limit.ts";
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -62,6 +63,27 @@ export function thrivelifeContentApiPlugin(): Plugin {
             }
             const host = req.headers.host ?? "127.0.0.1";
             const url = new URL(req.url ?? "/", `http://${host}`);
+            if (url.pathname.startsWith("/api/")) {
+              const forwarded = req.headers["x-forwarded-for"];
+              const ip =
+                (typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : null) ||
+                req.socket?.remoteAddress ||
+                "local";
+              const limit = rateLimit(`api:${ip}`);
+              res.setHeader("X-RateLimit-Remaining", String(limit.remaining));
+              if (!limit.allowed) {
+                res.setHeader("Retry-After", String(limit.retryAfterSec));
+                res.statusCode = 429;
+                res.setHeader("Content-Type", "application/json; charset=utf-8");
+                res.end(
+                  JSON.stringify({
+                    error: "rate_limited",
+                    retryAfterSec: limit.retryAfterSec,
+                  }),
+                );
+                return;
+              }
+            }
             if (await memberApi.handleMemberApi(req, res, url)) return;
             if (await assessmentApi.handleAssessmentApi(req, res, url)) return;
             if (await contentApi.handleContentApi(req, res, url)) return;

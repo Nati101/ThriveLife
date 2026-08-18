@@ -79,14 +79,31 @@ export type SessionsDocument = {
     payload: Record<string, unknown>;
     createdAt: string;
   }>;
+  mailLog: Array<{
+    id: string;
+    userKey: string;
+    kind: string;
+    to: string;
+    subject: string;
+    body: string;
+    provider: string;
+    status: string;
+    createdAt: string;
+    error: string | null;
+  }>;
 };
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 export const SESSIONS_DATA_DIR = path.resolve(rootDir, "../data");
-export const SESSIONS_STORE_PATH = path.join(
-  SESSIONS_DATA_DIR,
-  "sessions.json",
-);
+
+export function sessionsStorePath(): string {
+  if (process.env.TL_SESSIONS_STORE_PATH) {
+    return path.resolve(process.env.TL_SESSIONS_STORE_PATH);
+  }
+  return path.join(SESSIONS_DATA_DIR, "sessions.json");
+}
+
+export const SESSIONS_STORE_PATH = sessionsStorePath();
 
 function emptyDocument(now = new Date().toISOString()): SessionsDocument {
   return {
@@ -108,23 +125,26 @@ function emptyDocument(now = new Date().toISOString()): SessionsDocument {
     onboarding: [],
     privacyByUser: {},
     telemetry: [],
+    mailLog: [],
   };
 }
 
 function ensureDir(): void {
-  if (!fs.existsSync(SESSIONS_DATA_DIR)) {
-    fs.mkdirSync(SESSIONS_DATA_DIR, { recursive: true });
+  const dir = path.dirname(sessionsStorePath());
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
 export function readSessionsDocument(): SessionsDocument {
   ensureDir();
-  if (!fs.existsSync(SESSIONS_STORE_PATH)) {
+  const storePath = sessionsStorePath();
+  if (!fs.existsSync(storePath)) {
     const seeded = emptyDocument();
     writeSessionsDocument(seeded);
     return seeded;
   }
-  const raw = fs.readFileSync(SESSIONS_STORE_PATH, "utf8");
+  const raw = fs.readFileSync(storePath, "utf8");
   const parsed = JSON.parse(raw) as Partial<SessionsDocument>;
   const blank = emptyDocument();
   return {
@@ -138,6 +158,7 @@ export function readSessionsDocument(): SessionsDocument {
     onboarding: parsed.onboarding ?? [],
     privacyByUser: parsed.privacyByUser ?? {},
     telemetry: parsed.telemetry ?? [],
+    mailLog: parsed.mailLog ?? [],
     sessions: parsed.sessions ?? [],
     responses: parsed.responses ?? [],
     batteryResults: parsed.batteryResults ?? [],
@@ -156,10 +177,13 @@ export function writeSessionsDocument(doc: SessionsDocument): void {
     updatedAt: new Date().toISOString(),
   };
   fs.writeFileSync(
-    SESSIONS_STORE_PATH,
+    sessionsStorePath(),
     `${JSON.stringify(next, null, 2)}\n`,
     "utf8",
   );
+  void import("./cloud-persist.ts")
+    .then((mod) => mod.scheduleCloudPersist(() => mod.persistSessionsToCloud(next)))
+    .catch(() => undefined);
 }
 
 export function touchSessionsDocument(

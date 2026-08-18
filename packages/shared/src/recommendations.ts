@@ -53,6 +53,73 @@ export type RecommendationPick = {
   prompt: string | null;
 };
 
+/** Spec §8.1 — preferences, health limits, prior effectiveness when data exists. */
+export type MemberRecommendationContext = {
+  contextAnswers?: Record<string, string>;
+  checkIns?: Array<{
+    rechargeSelected: string | null;
+    completion: string;
+    batteryId: string;
+  }>;
+};
+
+export type HealthLimits = {
+  avoidPhysicalMovement: boolean;
+  preferSeated: boolean;
+  preferPlanB: boolean;
+};
+
+export function inferHealthLimits(
+  context: MemberRecommendationContext | undefined,
+): HealthLimits {
+  const health = (context?.contextAnswers?.health ?? "").toLowerCase();
+  const injury = /injur|pain|surgery|mobility|wheelchair|limited movement/.test(
+    health,
+  );
+  const seated = injury || /seated|sitting|sit-down/.test(health);
+  const checkIns = context?.checkIns ?? [];
+  const planBCount = checkIns.filter((c) => c.rechargeSelected === "plan_b").length;
+  const preferPlanB =
+    planBCount >= 2 && planBCount >= Math.ceil(checkIns.length / 2);
+  return {
+    avoidPhysicalMovement: injury,
+    preferSeated: seated,
+    preferPlanB,
+  };
+}
+
+export function ineffectiveActionIds(
+  checkIns: MemberRecommendationContext["checkIns"],
+  batteryId: BatteryId,
+): string[] {
+  const skipped = new Map<string, number>();
+  for (const row of checkIns ?? []) {
+    if (row.batteryId !== batteryId || !row.rechargeSelected) continue;
+    if (row.completion === "not_today") {
+      skipped.set(row.rechargeSelected, (skipped.get(row.rechargeSelected) ?? 0) + 1);
+    }
+  }
+  return [...skipped.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([id]) => id);
+}
+
+function actionFitsLimits(
+  action: RechargeAction,
+  limits: HealthLimits,
+  avoidIds: string[],
+): boolean {
+  if (avoidIds.includes(action.id)) return false;
+  if (limits.avoidPhysicalMovement && action.batteryId === "physical") {
+    const caution = (action.healthCaution ?? "").toLowerCase();
+    const text = `${action.planAText} ${action.instructions}`.toLowerCase();
+    if (/movement|walk|stretch/.test(caution) || /movement|walk/.test(text)) {
+      return Boolean(action.accessibilityVariations);
+    }
+  }
+  return true;
+}
+
 const SCAN_STALE_H = 18;
 const FULL_STALE_D = 90;
 
@@ -159,12 +226,15 @@ export function pickTodayRecharge(input: {
   priority: RecommendationPriorityInput;
   signalId?: string | null;
   timeOfDay?: RecommendationTimeOfDay;
+  memberContext?: MemberRecommendationContext;
 }): RecommendationPick {
   const resolved = resolveRecommendationSource(input.priority);
   const availableMinutes = DRIVING_MODE_BEHAVIOR[input.mode].durationCeilingMinutes;
-  const preferredPlan: "plan_a" | "plan_b" = DRIVING_MODE_BEHAVIOR[input.mode].planBDefault
-    ? "plan_b"
-    : "plan_a";
+  const limits = inferHealthLimits(input.memberContext);
+  const preferredPlan: "plan_a" | "plan_b" =
+    DRIVING_MODE_BEHAVIOR[input.mode].planBDefault || limits.preferPlanB
+      ? "plan_b"
+      : "plan_a";
 
   if (!resolved.batteryId) {
     return {
@@ -178,9 +248,17 @@ export function pickTodayRecharge(input: {
     };
   }
 
+  const avoidIds = ineffectiveActionIds(
+    input.memberContext?.checkIns,
+    resolved.batteryId,
+  );
+  const filteredActions = input.actions.filter((action) =>
+    actionFitsLimits(action, limits, avoidIds),
+  );
+
   const match = lookupRecommendation({
     lookups: input.lookups,
-    actions: input.actions,
+    actions: filteredActions.length > 0 ? filteredActions : input.actions,
     batteryId: resolved.batteryId,
     mode: input.mode,
     signalId: input.signalId,

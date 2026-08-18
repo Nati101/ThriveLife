@@ -16,6 +16,7 @@ export * from "./check-in";
 export * from "./escalation";
 export * from "./telemetry";
 export * from "./privacy";
+export * from "./reminders";
 
 export { FIXTURE_BATTERIES } from "./fixtures/batteries";
 export {

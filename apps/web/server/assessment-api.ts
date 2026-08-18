@@ -11,7 +11,6 @@ import {
   OVERCHARGE_APPROVED_MESSAGE,
   assertInstrumentWriteAllowed,
   isFullAssessmentLocked,
-  isRole,
   overchargeRulesFromThresholds,
   recommendBatteryFromScan,
   resolveDashboardAuthority,
@@ -39,71 +38,7 @@ import {
   type ScanRecommendationRow,
   type SessionsDocument,
 } from "./sessions-store";
-
-const DEV_ROLE_COOKIE = "tl_dev_role";
-const STUB_USER_ID = "stub-user-local";
-
-type JsonBody =
-  | Record<string, unknown>
-  | unknown[]
-  | string
-  | number
-  | boolean
-  | null;
-
-function sendJson(
-  res: ServerResponse,
-  status: number,
-  body: JsonBody,
-): void {
-  const payload = JSON.stringify(body);
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(payload);
-}
-
-function parseCookies(req: IncomingMessage): Record<string, string> {
-  const header = req.headers.cookie ?? "";
-  const out: Record<string, string> = {};
-  for (const part of header.split(";")) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq);
-    const value = decodeURIComponent(trimmed.slice(eq + 1));
-    out[key] = value;
-  }
-  return out;
-}
-
-function stubUserId(req: IncomingMessage): string {
-  const cookies = parseCookies(req);
-  const roleHeader = req.headers["x-thrivelife-role"];
-  const raw =
-    (typeof roleHeader === "string" ? roleHeader : null) ??
-    cookies[DEV_ROLE_COOKIE] ??
-    "user";
-  // Role only affects content admin; sessions always keyed to stub user.
-  void (isRole(raw) ? raw : "user");
-  return STUB_USER_ID;
-}
-
-async function readBody(req: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  if (chunks.length === 0) return {};
-  const raw = Buffer.concat(chunks).toString("utf8");
-  if (!raw.trim()) return {};
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return { _parseError: true };
-  }
-}
+import { readJsonBody, sendJson, userIdFromRequest, type JsonBody } from "./http";
 
 function matchPath(
   pathname: string,
@@ -528,7 +463,7 @@ export async function handleAssessmentApi(
 
   const method = (req.method ?? "GET").toUpperCase();
   const pathname = url.pathname;
-  const userId = stubUserId(req);
+  const userId = userIdFromRequest(req);
 
   try {
     // Instrument bootstrap (items + scales from content store — not fixture imports)
@@ -598,7 +533,7 @@ export async function handleAssessmentApi(
     }
 
     if (pathname === "/api/assessments/sessions" && method === "POST") {
-      const body = (await readBody(req)) as Record<string, unknown>;
+      const body = await readJsonBody(req);
       if (body._parseError) {
         sendJson(res, 400, { error: "invalid_json" });
         return true;
@@ -695,7 +630,7 @@ export async function handleAssessmentApi(
       "/api/assessments/sessions/:id/responses",
     );
     if (responsesMatch && method === "PUT") {
-      const body = (await readBody(req)) as Record<string, unknown>;
+      const body = await readJsonBody(req);
       if (body._parseError) {
         sendJson(res, 400, { error: "invalid_json" });
         return true;
@@ -769,7 +704,7 @@ export async function handleAssessmentApi(
       "/api/assessments/sessions/:id/complete",
     );
     if (completeMatch && method === "POST") {
-      const body = (await readBody(req)) as Record<string, unknown>;
+      const body = await readJsonBody(req);
       const now = new Date().toISOString();
       let resultPayload: JsonBody = null;
 

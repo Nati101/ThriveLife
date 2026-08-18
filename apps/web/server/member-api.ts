@@ -28,6 +28,8 @@ import {
   type DrivingModeOrUnsure,
   type PrivacySettings,
   type RestartRailAction,
+  dueFullAssessmentPrompts,
+  reminderMessage,
 } from "@thrivelife/shared";
 import { readContentDocument } from "./store";
 import { readSessionsDocument } from "./sessions-store";
@@ -36,58 +38,99 @@ import {
   readMemberRuntime,
   touchMemberRuntime,
 } from "./member-store";
-
-const DEV_ROLE_COOKIE = "tl_dev_role";
-const STUB_USER_ID = "stub-user-local";
-
-type JsonBody =
-  | Record<string, unknown>
-  | unknown[]
-  | string
-  | number
-  | boolean
-  | null;
-
-function sendJson(res: ServerResponse, status: number, body: JsonBody): void {
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(JSON.stringify(body));
-}
-
-function parseCookies(req: IncomingMessage): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const part of (req.headers.cookie ?? "").split(";")) {
-    const eq = part.indexOf("=");
-    if (eq === -1) continue;
-    out[part.slice(0, eq).trim()] = decodeURIComponent(part.slice(eq + 1).trim());
-  }
-  return out;
-}
-
-function userIdFromRequest(req: IncomingMessage): string {
-  const header = req.headers["x-thrivelife-user"];
-  if (typeof header === "string" && header.trim()) return header.trim();
-  return STUB_USER_ID;
-}
-
-function timezoneFromRequest(req: IncomingMessage): string {
-  const header = req.headers["x-thrivelife-tz"];
-  if (typeof header === "string" && header.trim()) return header.trim();
-  return "America/Edmonton";
-}
+import {
+  emailFromRequest,
+  readJsonBody,
+  sendJson,
+  timezoneFromRequest,
+  userIdFromRequest,
+} from "./http";
+import { persistNotificationToCloud, scheduleCloudPersist } from "./cloud-persist";
+import { sendMail } from "./mailer";
 
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  return readJsonBody(req);
+}
+
+async function processDueReminders(userId: string, email: string, nowIso?: string) {
+  const due = [] as Array<{ kind: string; subject: string }>;
+  const privacy =
+    readMemberRuntime().privacyByUser[userId] ?? DEFAULT_PRIVACY_SETTINGS;
+  const progress = readMemberRuntime().onboarding.find((o) => o.userId === userId);
+  if (!progress) return { due, sent: [] as typeof due };
+  const kinds = dueFullAssessmentPrompts(progress, nowIso);
+  if (kinds.length === 0) return { due, sent: [] as typeof due };
+
+  const sent: Array<{ kind: string; subject: string; provider: string }> = [];
+  for (const kind of kinds) {
+    const msg = reminderMessage(kind);
+    due.push({ kind: msg.kind, subject: msg.subject });
+    if (!privacy.notificationsEnabled) {
+      touchMemberRuntime((d) => {
+        const row = d.onboarding.find((o) => o.userId === userId);
+        if (!row) return;
+        if (kind === "day3") row.day3PromptedAt = nowIso ?? new Date().toISOString();
+        if (kind === "day7") row.day7PromptedAt = nowIso ?? new Date().toISOString();
+        d.mailLog.push({
+          id: memberNewId("mail"),
+          userKey: userId,
+          kind: msg.kind,
+          to: email,
+          subject: msg.subject,
+          body: msg.text,
+          provider: "skipped",
+          status: "skipped",
+          createdAt: nowIso ?? new Date().toISOString(),
+          error: "notifications_disabled",
+        });
+      });
+      sent.push({ kind: msg.kind, subject: msg.subject, provider: "skipped" });
+      continue;
+    }
+    const id = memberNewId("mail");
+    const result = await sendMail({
+      id,
+      to: email,
+      subject: msg.subject,
+      text: msg.text,
+      kind: msg.kind,
+      userKey: userId,
+    });
+    touchMemberRuntime((d) => {
+      const row = d.onboarding.find((o) => o.userId === userId);
+      if (row) {
+        if (kind === "day3") row.day3PromptedAt = nowIso ?? new Date().toISOString();
+        if (kind === "day7") row.day7PromptedAt = nowIso ?? new Date().toISOString();
+      }
+      d.mailLog.push({
+        id,
+        userKey: userId,
+        kind: msg.kind,
+        to: email,
+        subject: msg.subject,
+        body: msg.text,
+        provider: result.provider,
+        status: result.sent ? "sent" : result.provider === "log" ? "logged" : "failed",
+        createdAt: nowIso ?? new Date().toISOString(),
+        error: result.error ?? null,
+      });
+    });
+    scheduleCloudPersist(() =>
+      persistNotificationToCloud({
+        id,
+        userKey: userId,
+        kind: msg.kind,
+        toEmail: email,
+        subject: msg.subject,
+        body: msg.text,
+        provider: result.provider,
+        status: result.sent ? "sent" : result.provider === "log" ? "logged" : "failed",
+        error: result.error,
+      }),
+    );
+    sent.push({ kind: msg.kind, subject: msg.subject, provider: result.provider });
   }
-  if (chunks.length === 0) return {};
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
-  } catch {
-    return { _parseError: true };
-  }
+  return { due, sent };
 }
 
 function isBatteryId(value: unknown): value is BatteryId {
@@ -190,6 +233,7 @@ function buildDashboard(userId: string, drainSession = false) {
   const stabilizing = mostStabilizingStartingPoint(batteryResults);
   const support = strongestSupportBattery(batteryResults);
 
+  const onboarding = member.onboarding.find((o) => o.userId === userId);
   const rec = pickTodayRecharge({
     lookups: content.recommendationLookups,
     actions: content.rechargeActions,
@@ -200,6 +244,16 @@ function buildDashboard(userId: string, drainSession = false) {
       scanRecommendedBatteryId: scan?.recommendedBatteryId ?? null,
       fullAssessmentCompletedAt: fa?.completedAt ?? null,
       fullMostDepletedBatteryId: depleted,
+    },
+    memberContext: {
+      contextAnswers: onboarding?.contextAnswers,
+      checkIns: member.checkIns
+        .filter((c) => c.userId === userId)
+        .map((c) => ({
+          rechargeSelected: c.rechargeSelected,
+          completion: c.completion,
+          batteryId: c.batteryId,
+        })),
     },
   });
 
@@ -312,6 +366,11 @@ function buildDashboard(userId: string, drainSession = false) {
       typeof fa?.resultSummary?.incompleteBatteryIds === "object"
         ? fa?.resultSummary?.incompleteBatteryIds
         : [],
+    reminders: {
+      due: onboarding ? dueFullAssessmentPrompts(onboarding) : [],
+      notificationsEnabled:
+        (member.privacyByUser[userId] ?? DEFAULT_PRIVACY_SETTINGS).notificationsEnabled,
+    },
   };
 }
 
@@ -322,7 +381,6 @@ export async function handleMemberApi(
 ): Promise<boolean> {
   const pathname = url.pathname;
   const method = (req.method ?? "GET").toUpperCase();
-  void parseCookies(req)[DEV_ROLE_COOKIE];
 
   if (pathname === "/api/support" && method === "GET") {
     sendJson(res, 200, {
@@ -341,7 +399,31 @@ export async function handleMemberApi(
 
   try {
     if (pathname === "/api/me/dashboard" && method === "GET") {
-      sendJson(res, 200, buildDashboard(userId));
+      const progress = readMemberRuntime().onboarding.find((o) => o.userId === userId);
+      const due = progress ? dueFullAssessmentPrompts(progress) : [];
+      const reminders = await processDueReminders(userId, emailFromRequest(req));
+      sendJson(res, 200, {
+        ...buildDashboard(userId),
+        reminderDispatch: reminders,
+        reminders: {
+          due,
+          notificationsEnabled:
+            (readMemberRuntime().privacyByUser[userId] ?? DEFAULT_PRIVACY_SETTINGS)
+              .notificationsEnabled,
+        },
+      });
+      return true;
+    }
+
+    if (pathname === "/api/me/reminders" && method === "POST") {
+      const body = await readBody(req);
+      const nowIso = typeof body.nowIso === "string" ? body.nowIso : undefined;
+      const reminders = await processDueReminders(
+        userId,
+        emailFromRequest(req),
+        nowIso,
+      );
+      sendJson(res, 200, reminders);
       return true;
     }
 
