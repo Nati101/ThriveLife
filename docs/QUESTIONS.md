@@ -16,8 +16,8 @@ Questions, ambiguities, and risks derived from Developer Specification v1.0 (Jul
 | D3 | Admin / editors | **Same web app with roles** (e.g. user, editor, reviewer, admin) — not a separate admin app | 2026-08-07 |
 | D4 | Web framework | **Vite + React + TypeScript + Tailwind** (`apps/web`) — matches Base44; replaced earlier Next.js scaffold | 2026-08-07 |
 | D5 | Monorepo | **npm workspaces** — `apps/web`, `packages/shared`, `services/` reserved | 2026-08-07 |
-| D6 | Backend / content API | **Local JSON content store** (`apps/web/data/content-store.json` + Vite `/api` middleware) for now — **not a blocker**. **Not** using the Supabase platform. When assessment sessions / beta need it: **generic Postgres** in a Canada region (not Supabase-branded BaaS). | 2026-08-14 |
-| D7 | Auth provider | Stub locally; prefer Base44 auth if keeping their backend, else Clerk/Auth.js — **no Supabase Auth** | 2026-08-07 |
+| D6 | Backend / database | **Supabase Postgres** in Canada Central (`ca-central-1`, project `bpbfezmierdtproczkpj`). Local JSON remains the `npm run dev` content/session store. | 2026-08-18 |
+| D7 | Auth provider | **Supabase Auth** (one identity store). Roles in `profiles` / `app_metadata` — never `user_metadata`. `/dev/role` stub in DEV only. | 2026-08-18 |
 | D8 | Hosting region | **Prefer Canada** for assessment data; Legal confirm before beta | 2026-08-07 |
 | D9 | Prior client app | Base44 app `6a74e3c6a18bdd8e70a443ae` — **paste from editor** (free plan; see [BASE44-PRIOR-APP.md](./BASE44-PRIOR-APP.md)) | 2026-08-14 |
 

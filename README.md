@@ -8,31 +8,32 @@ Helps adults notice low energy, identify which Life Battery is most depleted, an
 
 ## Status
 
-Phase 0–2 foundation is runnable on **Vite + React + TypeScript**. Phase 2 adds a **local JSON content store** + role-gated admin CRUD (fixtures until Joel’s package). Product scoring engine (Phase 3) and full Base44 UI still pending.
+V1 **web beta** against Developer Specification v1.0: Phases 0–9 are implemented with **fixture content** (labeled `[FIXTURE]`). This is **not** clinical validation.
 
-**Repo:** https://github.com/Nati101/ThriveLife (private).
+- **Runtime:** Vite + React + TypeScript. `npm run dev` uses a local JSON store via `/api` middleware.
+- **Database:** Supabase Postgres in **Canada Central (`ca-central-1`)**, project `ThriveLife` (`bpbfezmierdtproczkpj`). Schema, RLS, and fixture seed are live. Member sessions in local dev still write to `apps/web/data/sessions.json`.
+- **Auth:** Supabase Auth is the production identity store. Roles live in `profiles` / `app_metadata` — never `user_metadata`. `/dev/role` is a **DEV-only** stub.
+- **Compliance:** [docs/SPEC-COMPLIANCE.md](docs/SPEC-COMPLIANCE.md)
+
+**Repo:** https://github.com/Nati101/ThriveLife (private). Do not claim psychometric validity.
 
 | Document | Purpose |
 |----------|---------|
 | [docs/SPEC-SUMMARY.md](docs/SPEC-SUMMARY.md) | Concise product & architecture summary |
 | [docs/TASKS.md](docs/TASKS.md) | Phased build checklist |
+| [docs/SPEC-COMPLIANCE.md](docs/SPEC-COMPLIANCE.md) | Spec requirement → Pass / Partial / Fail |
+| [docs/CONTENT-PACKAGE.md](docs/CONTENT-PACKAGE.md) | Fixture package Joel can swap |
 | [docs/QUESTIONS.md](docs/QUESTIONS.md) | Clarifying questions & open risks |
-| [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md) | **Base44 previous app — paste-from-editor (free plan)** |
 | [docs/ThriveLife-Developer-Specification-v1.txt](docs/ThriveLife-Developer-Specification-v1.txt) | Full developer spec |
-
-## Blocker — Base44 source needed
-
-The client’s previous app lives at Base44 (`app id` `6a74e3c6a18bdd8e70a443ae`). Free plan cannot ZIP-export. **Paste files from the Base44 code editor** into `vendor/base44-prior/` — steps in [docs/BASE44-PRIOR-APP.md](docs/BASE44-PRIOR-APP.md). Until then this repo ships a Vite foundation + fixture content from the spec, not their live Base44 UI.
 
 ## Decisions locked
 
 - **Web app** for V1 (native mobile deferred)
 - **Same app with roles** — `user` | `editor` | `reviewer` | `admin`
-- **Stack:** **Vite + React + TypeScript + Tailwind + React Router** (matches Base44; pivoted from an earlier Next.js scaffold)
-- Shared domain package: `packages/shared`
-- **Phase 2 persistence:** local JSON file (`apps/web/data/content-store.json`) via Vite `/api` middleware — **not a blocker**; **not** Supabase. Later: **Canada-region generic Postgres** when assessment sessions / beta need it
-- Auth: stub locally; prefer Base44 auth if we stay on their backend, else Clerk/Auth.js — **no Supabase Auth**
-- Hosting: prefer **Canada** region for assessment data (Legal confirm before beta)
+- **Stack:** Vite + React + TypeScript + Tailwind + React Router
+- **Database:** Supabase Postgres (`ca-central-1`). Local JSON for offline/dev
+- **Auth:** Supabase Auth (one identity store). Stub `/dev/role` in development only
+- Hosting: prefer **Canada**; Legal confirm before public beta
 
 ## Run locally
 
@@ -42,55 +43,53 @@ Requires Node 20+.
 git clone git@github.com:Nati101/ThriveLife.git
 cd ThriveLife
 npm install
+cp .env.example apps/web/.env.local
+# Fill VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (publishable only — never service_role)
 npm run dev
 ```
 
 Open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ```bash
-curl http://127.0.0.1:3000/health.json
-curl http://127.0.0.1:3000/api/health
+npm test
 npm run typecheck
 npm run build
 ```
 
-### Local roles (stub auth)
+### Environment
 
-Open **/dev/role** to switch `user` / `editor` / `reviewer` / `admin`. `/admin` is fail-closed for users without content-tool roles; `/admin/thresholds` requires `admin`. Content API (`/api/content/*`) enforces the same matrix server-side using the `tl_dev_role` cookie.
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `VITE_SUPABASE_URL` | `apps/web/.env.local` | Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | Publishable key (`sb_publishable_…`) |
+| `VITE_SUPABASE_ANON_KEY` | optional | Legacy anon JWT |
+| `SUPABASE_SERVICE_ROLE_KEY` | server only, never `VITE_*` | Optional admin scripts |
 
-### Admin CRUD (Phase 2)
+Canada note: cloud project region is **ca-central-1**. Legal still confirms PIPA/PIPEDA and cross-border before beta.
 
-1. Set role to **editor** (content) or **admin** (content + thresholds) at `/dev/role`.
-2. Open `/admin/content` — edit constructs, items (version bump on wording change), recharge actions, response scales.
-3. Open `/admin/thresholds` as **admin** — edit §4.3 bands; audit log records changes.
-4. Store file is created on first API hit; admin can **Reset to fixtures** from the content overview.
+### Auth
+
+- Production path: **/auth** (sign in / sign up, 18+ checkbox)
+- Local stub: **/dev/role** (`user` / `editor` / `reviewer` / `admin`) — cookie `tl_dev_role`
+
+### Admin
+
+1. Role **editor** or **admin** at `/dev/role` (or a cloud profile role).
+2. `/admin/content` — constructs, items, recharge, scales.
+3. `/admin/copy` — result / safety / notification copy + draft → review → publish.
+4. `/admin/thresholds` — admin only; audit log.
 
 ## Repo layout
 
 ```
 ThriveLife/
-├── apps/web/             # Vite + React (Base44-aligned) + /api content middleware
-├── apps/web/data/        # Local content-store.json (gitignored)
-├── packages/shared/      # Domain types + fixture content + seed helper
-├── services/             # Reserved for workers / Postgres API later
-├── admin/                # Deprecated stub — in-app /admin routes
-├── vendor/base44-prior/  # Pasted Base44 editor source (free plan)
-└── docs/                 # Spec, tasks, Base44 notes
+├── apps/web/             # Vite + React + /api middleware
+├── apps/web/data/        # Local JSON stores (gitignored)
+├── packages/shared/      # Domain types, fixtures, scoring
+├── supabase/             # Migrations + seed.sql
+├── services/             # Reserved workers
+└── docs/
 ```
-
-## Routes
-
-| Path | Purpose |
-|------|---------|
-| `/` | Brand home + domain overview |
-| `/onboarding` | Eight-step onboarding skeleton |
-| `/dashboard` | Seven-battery placeholder |
-| `/check-in` | Daily Check-In UI stub |
-| `/assessments/*` | Four instruments (fixtures) |
-| `/admin`, `/admin/content`, `/admin/thresholds` | Role-gated content tools (live CRUD) |
-| `/dev/role` | Local role switcher |
-| `/health.json` | Static health probe |
-| `/api/health`, `/api/content/*` | Local content API (dev server) |
 
 ## Confidentiality
 

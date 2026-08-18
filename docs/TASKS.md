@@ -3,9 +3,13 @@
 Actionable build plan derived from **Developer Specification v1.0 (July 2026)**.  
 Another developer should be able to execute from this list without re-reading the full spec.
 
-**Related:** [SPEC-SUMMARY.md](./SPEC-SUMMARY.md) · [QUESTIONS.md](./QUESTIONS.md) · [Full plaintext spec](./ThriveLife-Developer-Specification-v1.txt)
+**Related:** [SPEC-SUMMARY.md](./SPEC-SUMMARY.md) · [QUESTIONS.md](./QUESTIONS.md) · [SPEC-COMPLIANCE.md](./SPEC-COMPLIANCE.md) · [Full plaintext spec](./ThriveLife-Developer-Specification-v1.txt)
 
-**Legend:** `- [ ]` = todo · Owner hints: **Dev**, **Joel**, **Legal**, **Design**
+**Legend:** `- [ ]` = todo · `- [x]` = done · Owner hints: **Dev**, **Joel**, **Legal**, **Design**
+
+### Status 2026-08-18 (V1 web beta, fixture content)
+
+Dev-owned product phases **0–9** are implemented in the Vite app with unit/API tests. Persistence is **local JSON for `npm run dev`** plus a **Canada Central Supabase project** (`bpbfezmierdtproczkpj`, `ca-central-1`) with RLS, fixture seed, and Auth. Honest leftovers: Joel copy, Legal/PIPA docs, email/push, Playwright, dual-write of member sessions to Postgres, Phase 10 expert/pilot work. Details: [SPEC-COMPLIANCE.md](./SPEC-COMPLIANCE.md).
 
 ---
 
@@ -19,7 +23,7 @@ Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo 
 - [ ] Add CONTRIBUTING notes when collaboration starts
 - [x] PR template present (`.github/pull_request_template.md`)
 - [x] Choose and document monorepo vs multi-repo layout (placeholders under `apps/`, `services/`, `packages/` exist)
-- [ ] Set up CI (lint, typecheck, unit tests) on PR
+- [x] Set up CI (lint, typecheck, unit tests) on PR
 - [ ] Set up environments: `local` / `staging` / `production`
 - [x] Secrets management (no secrets in git); `.env.example` only
 - [ ] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
@@ -28,9 +32,9 @@ Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo 
 ### 0.2 Stack & platform decisions
 - [x] Primary client: **web app** (native mobile deferred)
 - [x] Choose web framework → **Vite + React + TypeScript + Tailwind + React Router** (aligned with Base44; Next.js scaffold replaced)
-- [x] Decide backend → **local JSON content API** (Vite middleware) — locked for now (**not** Supabase)
-- [x] Decide database → **JSON file store** for Phase 2; **Canada-region generic Postgres** later when assessment sessions / beta need it (**not** a Phase 0/2 blocker; not Supabase)
-- [x] Decide auth provider → stub locally; prefer **Base44 auth** if keeping their backend, else Clerk/Auth.js — **no Supabase Auth**
+- [x] Decide backend → **Vite `/api` middleware** (JSON local + optional Supabase overlay)
+- [x] Decide database → **Supabase Postgres in Canada Central (`ca-central-1`)**; local JSON remains the `npm run dev` runtime
+- [x] Decide auth provider → **Supabase Auth** for production path; `/dev/role` stub in DEV only
 - [x] Decide hosting region → **Prefer Canada region**; Legal confirm before beta
 - [x] Admin UI approach: **same web app, role-gated routes** (not a separate admin app)
 - [x] Define role matrix: `user` | `editor` | `reviewer` | `admin` — draft in `@thrivelife/shared`
@@ -40,7 +44,7 @@ Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo 
 ### 0.3 Initial app shell (no product logic yet)
 - [x] Bootstrap **web** app with routing skeleton (member flows + role-gated content/admin routes)
 - [x] Health probe (`apps/web/public/health.json`); content API `/api/health` in Phase 2
-- [ ] Bootstrap DB migrations tooling (JSON store now; SQL migrations with Postgres)
+- [x] Bootstrap DB migrations tooling (JSON store now; SQL migrations with Postgres)
 - [x] Shared types + fixtures in `@thrivelife/shared`
 - [x] Role gate helpers (fail closed on `/admin` routes)
 - [ ] Design-token placeholders once brand direction exists (see Phase 0.4)
@@ -67,9 +71,9 @@ Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo 
 
 Spec §11.1. Developer should **not** ship real scoring/recommendation with invented clinical/wellness wording.
 
-- [ ] Define content package format (JSON/CSV/CMS import) jointly
-- [ ] Import pipeline: batteries → constructs → instruments → items → response scales
-- [ ] Versioning rules for items (new version invalidates cross-version numeric compare)
+- [x] Define content package format (JSON/CSV/CMS import) jointly
+- [x] Import pipeline: batteries → constructs → instruments → items → response scales
+- [x] Versioning rules for items (new version invalidates cross-version numeric compare)
 - [ ] Content review checklist before enabling in staging
 - [ ] Track open risks from spec §13 that depend on content (item wording, recharge library, recharge dimension structure)
 
@@ -79,7 +83,7 @@ Spec §11.1. Developer should **not** ship real scoring/recommendation with inve
 
 Spec §§10–11.2. Everything else depends on this.
 
-**Local stack (2026-08-14):** JSON file store + Vite `/api` middleware in `apps/web/server/` (seeded from `@thrivelife/shared` fixtures). Postgres (Canada region) deferred — see `services/README.md` and `.env.example`.
+**Local stack (2026-08-18):** JSON file store + Vite `/api` middleware for `npm run dev`. **Supabase Postgres** in Canada Central (`bpbfezmierdtproczkpj`) holds the same schema with RLS; fixture seed applied. Dual-write of member sessions is not on the local path yet.
 
 ### 2.1 Database schema (Section 10)
 - [x] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified, **role** (typed in `@thrivelife/shared` schema; stub session until real auth)
@@ -100,7 +104,7 @@ Spec §§10–11.2. Everything else depends on this.
 - [x] `TuneUp` — typed in schema for Phase 3 (not persisted yet)
 - [x] `ScoringThreshold` — **admin-editable**; seed provisional values from §4.3
 - [x] `EscalationEvent` — typed in schema for Phase 3 (not persisted yet)
-- [ ] Indexes for user+date queries, session lookups, stale-after windows (Postgres later)
+- [x] Indexes for user+date queries, session lookups, stale-after windows (Postgres later)
 - [ ] Soft-delete / retention fields as privacy model requires (confirm with Legal) — items soft-deactivate only for now
 
 ### 2.2 Domain invariants (enforce in DB + service layer)
@@ -119,7 +123,7 @@ Spec §§10–11.2. Everything else depends on this.
 - [x] CRUD response scales and labels
 - [x] CRUD scoring thresholds (with audit log of changes) — restrict to appropriate roles
 - [x] CRUD recharge actions (signals / recommendation lookup rows deferred to Phase 4)
-- [ ] CRUD result interpretation / safety / notification copy
+- [x] CRUD result interpretation / safety / notification copy
 - [ ] Preview mode for instruments
 - [x] Activate/deactivate items without deleting historical responses
 - [x] Acceptance: Joel (and other editors/reviewers) can change thresholds and copy **without a code release** (local JSON store; Postgres later)
@@ -131,10 +135,10 @@ Spec §§10–11.2. Everything else depends on this.
 
 ### 2.5 Phase 2 tests
 - [ ] Schema migration tests
-- [ ] Admin permission tests
+- [x] Admin permission tests
 - [x] Threshold read path used by scoring service (no magic numbers in scorer) — Phase 3
 
-**Remaining Phase 2 gaps (content/admin — not DB cutover):** formal draft→approve→publish workflow UI; interpretation/safety/notification copy CRUD; instrument preview; automated API/permission tests; soft-delete/retention beyond item deactivate. **Deferred (not a Phase 2 blocker):** Canada-region generic Postgres + SQL migrations when assessment sessions / beta need persistence beyond the local JSON store.
+**Remaining Phase 2 gaps:** instrument preview UI; automated RLS tests against live Postgres (policies exist; local API tests cover cookie RBAC); dual-write of member sessions. **Supabase is live** in `ca-central-1`.
 
 ---
 
@@ -146,7 +150,7 @@ Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures unti
 - [x] Start/resume/complete session API
 - [x] Persist per-item responses with timestamps
 - [x] Support skip / N/A / Unsure
-- [ ] Abandonment detection hooks (dwell time → Phase 8)
+- [x] Abandonment detection hooks (dwell time → Phase 8)
 - [x] Interval calculation since previous Full Assessment
 
 ### 3.2 DRAIN Check (~10 items, Yes/Somewhat/No → 2/1/0)
@@ -190,7 +194,7 @@ Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures unti
   - [x] Battery “showing signal” = ≥2 of 3 Strain items ≥ 3
   - [x] 0–1 → Green, 2–3 → Yellow, 4+ → Red
 - [x] Log full signal-count distribution for pilot recalibration
-- [ ] Mode effects: duration ceilings and Plan A/B behavior (§6.3) — deferred to Phase 4 recommendation engine
+- [x] Mode effects: duration ceilings and Plan A/B behavior (§6.3) — deferred to Phase 4 recommendation engine
 
 ### 3.7 Authority & staleness service (§3.2)
 - [x] Central resolver: for each dashboard element, return value | stale | missing + prompt
@@ -205,11 +209,9 @@ Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures unti
 - [x] Version stamp + no cross-version numeric compare helpers
 
 **Phase 3 remaining gaps (honest):**
-- DRAIN items still sit on `construct_drain_signal` (`dimension: "drain"`) — **not** linked as Strain timeframe variants (§3.3 / audit gap). Scores are real engine math on fixtures, not Joel-authored constructs.
-- Abandonment / dwell-time hooks deferred to Phase 8.
-- Mode duration ceilings / Plan A-B filtering belong to Phase 4 recommendation engine (not wired into recharge menus yet).
-- N/A rate &gt;15% flagging is tracked per session (`naItemIds`); aggregate pilot dashboard not built.
-- Dashboard page still shows placeholder rings — authority API exists at `/api/assessments/me/authority` for Phase 4 to consume.
+- Scores are real engine math on **fixture** constructs, not Joel-authored items.
+- Aggregate N/A&gt;15% **pilot dashboard** is not built (per-session flag exists).
+- Local sessions persist to `sessions.json`; cloud `assessment_sessions` tables exist but local stub user does not dual-write.
 - Difficulty-stopping overcharge item is fixture-id keyed (`fixture_full_work_daily_purpose_strain_3`); Joel content must preserve a tagged item or admin config override.
 
 ---
@@ -219,41 +221,41 @@ Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures unti
 Spec §§3.5, 8, 11.4. Needs recharge library + result copy from Joel; design system for polish.
 
 ### 4.1 Dashboard five elements (§8)
-- [ ] Most depleted battery (lowest Capacity + highest Strain + lowest Recharge)
-- [ ] Most stabilizing starting point (Physical or Daily Rhythms if severely low; else lowest; user override)
-- [ ] Strongest support (stable capacity + effective recharge)
-- [ ] Overcharge risk display (§5.3)
-- [ ] Today’s recharge — **one action only**, matched to focus battery + mode
+- [x] Most depleted battery (lowest Capacity + highest Strain + lowest Recharge)
+- [x] Most stabilizing starting point (Physical or Daily Rhythms if severely low; else lowest; user override)
+- [x] Strongest support (stable capacity + effective recharge)
+- [x] Overcharge risk display (§5.3)
+- [x] Today’s recharge — **one action only**, matched to focus battery + mode
 
 ### 4.2 Conflict display rule (§3.5)
-- [ ] Battery ring = Full Assessment state
-- [ ] Marker = today’s Scan
-- [ ] If diverge by &gt;1 level, show explicit copy naming both
-- [ ] Never merge/average Scan + Full Assessment
+- [x] Battery ring = Full Assessment state
+- [x] Marker = today’s Scan
+- [x] If diverge by &gt;1 level, show explicit copy naming both
+- [x] Never merge/average Scan + Full Assessment
 
 ### 4.3 Recommendation engine (§8.1–8.2)
-- [ ] Input priority: DRAIN (session) → Battery Scan (&lt;18h) → Full Assessment (&lt;90d) → prompt Scan
-- [ ] **Rule-based lookup table** (battery × signal × mode × time → action) — admin-editable, not hard-coded conditionals
-- [ ] Respect mode duration ceilings (Green 10m / Yellow 5m / Red 2m)
-- [ ] Always include Plan A and Plan B; Red defaults Plan B; never treat Plan B as lesser
+- [x] Input priority: DRAIN (session) → Battery Scan (&lt;18h) → Full Assessment (&lt;90d) → prompt Scan
+- [x] **Rule-based lookup table** (battery × signal × mode × time → action) — admin-editable, not hard-coded conditionals
+- [x] Respect mode duration ceilings (Green 10m / Yellow 5m / Red 2m)
+- [x] Always include Plan A and Plan B; Red defaults Plan B; never treat Plan B as lesser
 - [ ] Factor preferences, health limitations, prior effectiveness when data exists
-- [ ] Accessibility variations + health cautions on actions
+- [x] Accessibility variations + health cautions on actions
 
 ### 4.4 Recharge UX
-- [ ] 60s / 2 / 5 / 10 minute menus filtered by mode
-- [ ] Completion experience that encourages leaving the app (product goal)
-- [ ] Provisional dashboard for Scan-only users (onboarding Step 5)
+- [x] 60s / 2 / 5 / 10 minute menus filtered by mode
+- [x] Completion experience that encourages leaving the app (product goal)
+- [x] Provisional dashboard for Scan-only users (onboarding Step 5)
 
 ### 4.5 Progress display constraints (§7.4) — shared with Phase 5
-- [ ] Full Assessment = discrete snapshots only
-- [ ] No numeric deltas until SEM validated — state/direction labels only
-- [ ] Block comparing different item versions numerically
+- [x] Full Assessment = discrete snapshots only
+- [x] No numeric deltas until SEM validated — state/direction labels only
+- [x] Block comparing different item versions numerically
 
 ### 4.6 Phase 4 tests
-- [ ] Priority fallback chain
-- [ ] Mode ceiling filtering
-- [ ] Conflict display copy triggers
-- [ ] Lookup table resolution with admin reordering
+- [x] Priority fallback chain
+- [x] Mode ceiling filtering
+- [x] Conflict display copy triggers
+- [x] Lookup table resolution with admin reordering
 
 ---
 
@@ -262,41 +264,41 @@ Spec §§3.5, 8, 11.4. Needs recharge library + result copy from Joel; design sy
 Spec §§7.2, 7.5–7.6, 11.5.
 
 ### 5.1 Daily Check-In (&lt;30 seconds)
-- [ ] Q1: mode today (G/Y/R/Unsure)
-- [ ] Q2: which battery needs most support
-- [ ] Q3: recharge version (2 / 5 / 10 / Plan B)
-- [ ] Q4: completion (Yes / Partly / Not today / I changed the plan)
-- [ ] Optional note: text only in V1 (voice notes deferred); **no NLP / classification**
-- [ ] Writes continuous progress series (separate from assessments)
+- [x] Q1: mode today (G/Y/R/Unsure)
+- [x] Q2: which battery needs most support
+- [x] Q3: recharge version (2 / 5 / 10 / Plan B)
+- [x] Q4: completion (Yes / Partly / Not today / I changed the plan)
+- [x] Optional note: text only in V1 (voice notes deferred); **no NLP / classification**
+- [x] Writes continuous progress series (separate from assessments)
 
 ### 5.2 Restart Rail (§7.5)
-- [ ] On miss: “Nothing is lost. Practice the return.”
-- [ ] Actions: Do 2 minutes now / Use Plan B / Schedule next return
-- [ ] Track: time to return, successful returns, Plan B usage, 4-of-7 consistency
-- [ ] Do **not** track: streak loss, failed-day counts, social rankings
+- [x] On miss: “Nothing is lost. Practice the return.”
+- [x] Actions: Do 2 minutes now / Use Plan B / Schedule next return
+- [x] Track: time to return, successful returns, Plan B usage, 4-of-7 consistency
+- [x] Do **not** track: streak loss, failed-day counts, social rankings
 
 ### 5.3 Two-chart progress history
-- [ ] Chart A: Full Assessment snapshots (baseline vs current)
-- [ ] Chart B: Daily Check-In continuous line
-- [ ] Never merge on one axis
-- [ ] Labels only (no unjustified numeric deltas)
+- [x] Chart A: Full Assessment snapshots (baseline vs current)
+- [x] Chart B: Daily Check-In continuous line
+- [x] Never merge on one axis
+- [x] Labels only (no unjustified numeric deltas)
 
 ### 5.4 One Battery Tune-Up (§7.6)
-- [ ] Gate: requires completed Full Assessment (clear messaging if missing)
-- [ ] Setup steps 1–6 (warning light → battery → daily action → support action → interval → win definition)
-- [ ] Support action options: prepare environment, tell trusted person, visible cue, reduce friction, schedule rest, move phone, prepare food/water, block time
-- [ ] Review at 30/60/90: prescribed reflection questions; continue/deepen/simplify/switch/maintenance
-- [ ] Prompt Full Assessment at Tune-Up review points and at 90 days if not retaken
+- [x] Gate: requires completed Full Assessment (clear messaging if missing)
+- [x] Setup steps 1–6 (warning light → battery → daily action → support action → interval → win definition)
+- [x] Support action options: prepare environment, tell trusted person, visible cue, reduce friction, schedule rest, move phone, prepare food/water, block time
+- [x] Review at 30/60/90: prescribed reflection questions; continue/deepen/simplify/switch/maintenance
+- [x] Prompt Full Assessment at Tune-Up review points and at 90 days if not retaken
 
 ### 5.5 Optional reminders
-- [ ] Notification preferences (opt-in)
+- [x] Notification preferences (opt-in)
 - [ ] Use Joel’s notification copy; tone-safe
-- [ ] Respect disable-notifications privacy control
+- [x] Respect disable-notifications privacy control
 
 ### 5.6 Phase 5 tests
-- [ ] Check-in persistence and timezone/date boundaries
-- [ ] Restart Rail metrics exclude forbidden streak semantics
-- [ ] Tune-Up gating and review outcomes schema
+- [x] Check-in persistence and timezone/date boundaries
+- [x] Restart Rail metrics exclude forbidden streak semantics
+- [x] Tune-Up gating and review outcomes schema
 
 ---
 
@@ -304,18 +306,18 @@ Spec §§7.2, 7.5–7.6, 11.5.
 
 Spec §7.1, §11.6. Build **after** Scan, Pit Stop, and Full Assessment work.
 
-- [ ] Step 1: Welcome — one-sentence product intro
-- [ ] Step 2: Explanation — wellness disclaimer, consent, not a diagnosis, batteries rise/fall, low ≠ failure
-- [ ] Step 3: Context questions (season, transitions, caregiving, health, schedule, energy focus) — **personalization only, never scored**
-- [ ] Step 4: Battery Scan
-- [ ] Step 5: Provisional dashboard (one battery + 2-min Pit Stop)
-- [ ] Step 6: First recharge completion (prove product value)
-- [ ] Step 7: Full Assessment offer (~9 min); decline allowed
-- [ ] Step 8: Full dashboard + plan (if assessment taken)
-- [ ] Decline path: re-prompt Day 3 and Day 7
-- [ ] Age gate 18+ at signup (also Phase 7)
-- [ ] **Do not** implement adaptive/partial deep assessment based on Scan (§7.1 DEV NOTE)
-- [ ] Can ship linear MVP flow first; refine after user testing
+- [x] Step 1: Welcome — one-sentence product intro
+- [x] Step 2: Explanation — wellness disclaimer, consent, not a diagnosis, batteries rise/fall, low ≠ failure
+- [x] Step 3: Context questions (season, transitions, caregiving, health, schedule, energy focus) — **personalization only, never scored**
+- [x] Step 4: Battery Scan
+- [x] Step 5: Provisional dashboard (one battery + 2-min Pit Stop)
+- [x] Step 6: First recharge completion (prove product value)
+- [x] Step 7: Full Assessment offer (~9 min); decline allowed
+- [x] Step 8: Full dashboard + plan (if assessment taken)
+- [x] Decline path: re-prompt Day 3 and Day 7
+- [x] Age gate 18+ at signup (also Phase 7)
+- [x] **Do not** implement adaptive/partial deep assessment based on Scan (§7.1 DEV NOTE)
+- [x] Can ship linear MVP flow first; refine after user testing
 
 ---
 
@@ -324,45 +326,45 @@ Spec §7.1, §11.6. Build **after** Scan, Pit Stop, and Full Assessment work.
 Spec §9, §11.7. Must be complete before any beta user.
 
 ### 7.1 Product posture
-- [ ] Persistent “not diagnosis / not emergency support” disclaimer (onboarding + help)
-- [ ] Confirm assessment item bank has **no** self-harm/suicidality/substance/abuse screening items
-- [ ] Document rationale (wellness tool + always-available support, not unstaffed screener)
+- [x] Persistent “not diagnosis / not emergency support” disclaimer (onboarding + help)
+- [x] Confirm assessment item bank has **no** self-harm/suicidality/substance/abuse screening items
+- [x] Document rationale (wellness tool + always-available support, not unstaffed screener)
 
 ### 7.2 Always-available support layer
-- [ ] Persistent link in help menu + foot of every results screen
-- [ ] Regional crisis / mental health resources list (Canada/Alberta first — confirm regions)
-- [ ] Never score-triggered; never conditional; never framed as response to answers
+- [x] Persistent link in help menu + foot of every results screen
+- [x] Regional crisis / mental health resources list (Canada/Alberta first — confirm regions)
+- [x] Never score-triggered; never conditional; never framed as response to answers
 
 ### 7.3 Escalation tiers (copy professionally reviewed before beta)
-- [ ] Tier 1: ≥4 batteries Low across two consecutive Full Assessments ≥14 days apart → non-alarming card + find support + dismiss; no app block; no repeat within 30 days
-- [ ] Tier 2: Physical Capacity &lt; 1.5 sustained across two assessments → book-voice medical attention guidance
-- [ ] Persist `EscalationEvent`; respect dismissal windows
+- [x] Tier 1: ≥4 batteries Low across two consecutive Full Assessments ≥14 days apart → non-alarming card + find support + dismiss; no app block; no repeat within 30 days
+- [x] Tier 2: Physical Capacity &lt; 1.5 sustained across two assessments → book-voice medical attention guidance
+- [x] Persist `EscalationEvent`; respect dismissal windows
 - [ ] College + legal sign-off tracked as release checklist item
 
 ### 7.4 Free text
-- [ ] No automated classification / NLP / keyword risk detection
+- [x] No automated classification / NLP / keyword risk detection
 
 ### 7.5 Age gate
-- [ ] Self-declared 18+ at signup; block under-18
-- [ ] No teen account paths in V1
+- [x] Self-declared 18+ at signup; block under-18
+- [x] No teen account paths in V1
 
 ### 7.6 Privacy controls (§9.9)
-- [ ] Private by default for assessments, scores, mode, journal, completion, support needs, tune-ups, future AI chats
-- [ ] Export data
-- [ ] Delete data / delete account
-- [ ] Disable notifications
-- [ ] Disable AI features (when AI exists)
-- [ ] Journal retention control
-- [ ] Opt-in anonymous usage analytics
-- [ ] Future team-share controls (stub OK if teams deferred)
+- [x] Private by default for assessments, scores, mode, journal, completion, support needs, tune-ups, future AI chats
+- [x] Export data
+- [x] Delete data / delete account
+- [x] Disable notifications
+- [x] Disable AI features (when AI exists)
+- [x] Journal retention control
+- [x] Opt-in anonymous usage analytics
+- [x] Future team-share controls (stub OK if teams deferred)
 - [ ] Privacy policy + Terms (Legal) linked in-app
 - [ ] Encryption at rest, retention, cross-border storage per Legal counsel
 - [ ] Alberta PIPA / PIPEDA review before beta
 
 ### 7.7 AI rules (if any AI in V1 — prefer defer)
-- [ ] Only after rule-based system works
+- [x] Only after rule-based system works
 - [ ] Allow-list vs deny-list from §9.8 enforced in prompts/product copy
-- [ ] AI must not replace rule-based scoring
+- [x] AI must not replace rule-based scoring
 
 ---
 
@@ -370,16 +372,16 @@ Spec §9, §11.7. Must be complete before any beta user.
 
 Spec §11.8.
 
-- [ ] Per-item response timestamp
-- [ ] Per-screen dwell time
-- [ ] Abandonment point capture
-- [ ] N/A and skip flags aggregated
-- [ ] Device type
-- [ ] Assessment version
-- [ ] Interval since previous administration
-- [ ] Signal-count distribution logging (mode suggestion fragility)
-- [ ] Threshold change audit + ability to recalibrate without deploy
-- [ ] Privacy-respecting analytics consent
+- [x] Per-item response timestamp
+- [x] Per-screen dwell time
+- [x] Abandonment point capture
+- [x] N/A and skip flags aggregated
+- [x] Device type
+- [x] Assessment version
+- [x] Interval since previous administration
+- [x] Signal-count distribution logging (mode suggestion fragility)
+- [x] Threshold change audit + ability to recalibrate without deploy
+- [x] Privacy-respecting analytics consent
 - [ ] Internal dashboard or export for Joel’s Stage 1 analysis (N≈50–150)
 
 ---
@@ -388,10 +390,10 @@ Spec §11.8.
 
 Scattered across MVP but needed for real users.
 
-- [ ] Sign up / sign in / sign out / password reset or magic link
-- [ ] Assign and change roles (member / editor / reviewer / admin) without a separate app
-- [ ] Consent capture + versioned consent records
-- [ ] Timezone handling for daily/weekly prompts
+- [x] Sign up / sign in / sign out / password reset or magic link
+- [x] Assign and change roles (member / editor / reviewer / admin) without a separate app
+- [x] Consent capture + versioned consent records
+- [x] Timezone handling for daily/weekly prompts
 - [ ] Email and/or web-push notification infrastructure (optional reminders; native push N/A for web-first)
 - [ ] Staging data hygiene (no real PII in shared staging without controls)
 - [ ] Backup/restore runbooks
@@ -420,11 +422,11 @@ From Part 14 — not “features” but release blockers for public launch.
 ## Cross-cutting quality bar (all phases)
 
 - [ ] Copy review against central reframe (capacity, not discipline/shame)
-- [ ] Unit + integration tests for scoring and authority boundaries
+- [x] Unit + integration tests for scoring and authority boundaries
 - [ ] Snapshot/UI tests for critical flows (Scan, Pit Stop, Full Assessment, Check-In)
 - [ ] Load/perf smoke for Full Assessment session (56 items)
 - [ ] Security review before beta (authz on content roles + user data isolation)
-- [ ] Keep all numeric thresholds in `ScoringThreshold` / config — grep CI to forbid hard-coded bounds in scorer
+- [x] Keep all numeric thresholds in `ScoringThreshold` / config — grep CI to forbid hard-coded bounds in scorer
 
 ---
 
