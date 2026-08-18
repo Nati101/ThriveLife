@@ -1,72 +1,218 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BATTERY_STATE_LABELS,
-  FIXTURE_BATTERIES,
-  FIXTURE_RECHARGE_ACTIONS,
   type BatteryState,
 } from "@thrivelife/shared";
 import { Target, ArrowRight } from "lucide-react";
-import { PageHeader, PlaceholderPanel } from "@/components/PageHeader";
+import { PageHeader } from "@/components/PageHeader";
+import { fetchDashboard } from "@/lib/member-api";
+import { SupportFooter } from "@/components/SupportFooter";
 
-const FIXTURE_STATES: Partial<Record<string, BatteryState>> = {
-  physical: "low",
-  daily_rhythms: "strained_but_functioning",
-  mental: "steady",
-  emotional: "steady",
-  relational: "well_charged",
-  spiritual: "steady",
-  work_daily_purpose: "strained_but_functioning",
+type Ring = {
+  batteryId: string;
+  status: string;
+  value: BatteryState | null;
+};
+
+type Marker = {
+  batteryId: string;
+  status: string;
+  value: "low" | "steady" | "full" | null;
 };
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 18) return "Good Afternoon";
-  return "Good Evening";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 export function DashboardPage() {
-  const focus = FIXTURE_RECHARGE_ACTIONS[0];
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchDashboard()
+      .then((row) => setData(row))
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : "Failed to load dashboard"),
+      );
+  }, []);
+
+  if (error) {
+    return <p className="text-sm text-red-700">{error}</p>;
+  }
+  if (!data) {
+    return <p className="text-sm text-muted-foreground">Loading dashboard…</p>;
+  }
+
+  const authority = data.authority as {
+    batteryRings: Ring[];
+    scanMarkers: Marker[];
+    conflictNote: string | null;
+    declaredDrivingMode: { status: string; value: string | null };
+    overchargeFlag: {
+      value: { isFlagged: boolean; contributingBatteries: string[] } | null;
+    };
+  };
+  const batteries = data.batteries as Array<{
+    id: string;
+    name: string;
+    thinkOfItAs: string;
+  }>;
+  const names = data.batteryNames as Record<string, string>;
+  const elements = data.elements as {
+    mostDepletedBatteryId: string | null;
+    mostStabilizingBatteryId: string | null;
+    strongestSupportBatteryId: string | null;
+    todayRecharge: {
+      action: {
+        planAText: string;
+        planBText: string;
+        durationTier: string;
+        healthCaution: string | null;
+      } | null;
+      preferredPlan: "plan_a" | "plan_b";
+      prompt: string | null;
+      source: string;
+      batteryId: string | null;
+    };
+  };
+  const escalation = data.escalation as { tier: 1 | 2 | null; message: string | null };
+  const copy = data.copy as { safety?: { body: string } | null };
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">
-          {getGreeting()}!
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-800">{getGreeting()}.</h1>
         <p className="text-muted-foreground">
-          Here’s your wellness summary for today.
+          Notice, match, respond — then leave the app and re-enter your day.
         </p>
       </div>
 
       <PageHeader
         eyebrow="Dashboard"
-        title="Seven-battery overview"
-        description="Five elements from spec §8 will live here. Rings use Full Assessment authority; Scan markers stay separate — never merged."
+        title="Five things that matter today"
+        description="Battery rings come from the Full Assessment. Today’s markers come from the Battery Scan. They are never averaged."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <PlaceholderPanel title="Most depleted (fixture)">
-          Physical — lowest capacity reading in this placeholder snapshot.
-        </PlaceholderPanel>
-        <section className="rounded-xl border border-border border-l-4 border-l-primary bg-white p-5 shadow-sm">
-          <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
-            <Target className="h-5 w-5 text-primary" />
-            Today’s recharge (fixture)
+      {authority.conflictNote ? (
+        <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground">
+          {authority.conflictNote}
+        </p>
+      ) : null}
+
+      {escalation.message ? (
+        <section className="rounded-xl border border-border bg-white p-5">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Extra support, if you want it
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {focus.planAText}
+            {escalation.message}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">{focus.planBText}</p>
-          <p className="mt-2 text-xs text-fixture">
-            Plan B counts as full success.
+          <Link
+            to="/support"
+            className="mt-3 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Find support
+          </Link>
+        </section>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Most depleted
+          </h2>
+          <p className="mt-2 text-xl font-semibold text-gray-800">
+            {elements.mostDepletedBatteryId
+              ? names[elements.mostDepletedBatteryId]
+              : "Take the Full Assessment to see this."}
+          </p>
+        </section>
+        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Stabilizing start
+          </h2>
+          <p className="mt-2 text-xl font-semibold text-gray-800">
+            {elements.mostStabilizingBatteryId
+              ? names[elements.mostStabilizingBatteryId]
+              : "Physical or Daily Rhythms when those read Low."}
+          </p>
+        </section>
+        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Strongest support
+          </h2>
+          <p className="mt-2 text-xl font-semibold text-gray-800">
+            {elements.strongestSupportBatteryId
+              ? names[elements.strongestSupportBatteryId]
+              : "Appears after a Full Assessment with stable capacity + recharge skill."}
+          </p>
+        </section>
+        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Overcharge flag
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {authority.overchargeFlag.value?.isFlagged
+              ? "Your results may suggest that one area is being sustained by drawing heavily from other batteries."
+              : "No overcharge observation on the latest Full Assessment."}
           </p>
         </section>
       </div>
 
+      <section className="rounded-xl border border-border border-l-4 border-l-primary bg-white p-5 shadow-sm">
+        <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+          <Target className="h-5 w-5 text-primary" />
+          Today’s recharge — one action
+        </h2>
+        {elements.todayRecharge.action ? (
+          <>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {elements.todayRecharge.preferredPlan === "plan_b"
+                ? elements.todayRecharge.action.planBText
+                : elements.todayRecharge.action.planAText}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Plan B (counts as complete success): {elements.todayRecharge.action.planBText}
+            </p>
+            {elements.todayRecharge.action.healthCaution ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {elements.todayRecharge.action.healthCaution}
+              </p>
+            ) : null}
+            <p className="mt-3 text-xs text-muted-foreground">
+              Source: {elements.todayRecharge.source.replaceAll("_", " ")} · Mode ceiling
+              applies. When you finish, leave the app.
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {elements.todayRecharge.prompt ?? "Complete a Battery Scan to match a recharge."}
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            to="/check-in"
+            className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Log a check-in
+          </Link>
+          <Link
+            to="/assessments/battery-scan"
+            className="rounded-lg border border-border px-3 py-2 text-sm font-medium"
+          >
+            Battery Scan
+          </Link>
+        </div>
+      </section>
+
       <ul className="grid gap-3 sm:grid-cols-2">
-        {FIXTURE_BATTERIES.map((battery) => {
-          const state = FIXTURE_STATES[battery.id];
+        {batteries.map((battery) => {
+          const ring = authority.batteryRings.find((r) => r.batteryId === battery.id);
+          const marker = authority.scanMarkers.find((m) => m.batteryId === battery.id);
           return (
             <li
               key={battery.id}
@@ -75,33 +221,41 @@ export function DashboardPage() {
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-semibold text-gray-800">{battery.name}</p>
                 <span className="text-xs text-muted-foreground">
-                  {state ? BATTERY_STATE_LABELS[state] : "Missing"}
+                  {ring?.value ? BATTERY_STATE_LABELS[ring.value] : "No Full Assessment state"}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {battery.covers}
+              <p className="mt-1 text-sm text-muted-foreground">{battery.thinkOfItAs}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Today’s scan marker:{" "}
+                {marker?.value ? marker.value : "none (complete a Scan)"}
               </p>
             </li>
           );
         })}
       </ul>
 
+      <p className="text-xs text-muted-foreground">
+        Driving mode: {authority.declaredDrivingMode.value ?? "not declared this week"} (
+        {authority.declaredDrivingMode.status}).
+      </p>
+
       <div className="flex flex-wrap gap-3 text-sm">
         <Link
-          to="/check-in"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium text-foreground transition hover:bg-gray-100"
+          to="/progress"
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium"
         >
-          Daily Check-In
+          Two-chart progress
           <ArrowRight className="h-4 w-4" />
         </Link>
         <Link
-          to="/assessments"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium text-foreground transition hover:bg-gray-100"
+          to="/tune-up"
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium"
         >
-          Assessments
+          One Battery Tune-Up
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
+      <SupportFooter note={copy.safety?.body} />
     </div>
   );
 }

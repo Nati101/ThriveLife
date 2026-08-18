@@ -26,6 +26,37 @@ function ensureDir(): void {
   }
 }
 
+function migrateContentDocument(raw: Partial<ContentDocument>): ContentDocument {
+  const seed = createSeedContentDocument();
+  const batteries = raw.batteries?.length
+    ? raw.batteries.map((row) => ({
+        ...row,
+        icon: row.icon ?? seed.batteries.find((b) => b.id === row.id)?.icon ?? "circle",
+      }))
+    : seed.batteries;
+  return {
+    ...seed,
+    ...raw,
+    version: 2,
+    batteries,
+    constructs: raw.constructs ?? seed.constructs,
+    instruments: raw.instruments ?? seed.instruments,
+    responseScales: raw.responseScales ?? seed.responseScales,
+    items: raw.items ?? seed.items,
+    rechargeActions: raw.rechargeActions ?? seed.rechargeActions,
+    scoringThresholds: raw.scoringThresholds ?? seed.scoringThresholds,
+    thresholdAuditLog: raw.thresholdAuditLog ?? [],
+    contentCopy: raw.contentCopy?.length ? raw.contentCopy : seed.contentCopy,
+    recommendationLookups: raw.recommendationLookups?.length
+      ? raw.recommendationLookups
+      : seed.recommendationLookups,
+    signals: raw.signals?.length ? raw.signals : seed.signals,
+    workflowEvents: raw.workflowEvents ?? [],
+    seededAt: raw.seededAt ?? seed.seededAt,
+    updatedAt: raw.updatedAt ?? seed.updatedAt,
+  };
+}
+
 export function readContentDocument(): ContentDocument {
   ensureDir();
   if (!fs.existsSync(CONTENT_STORE_PATH)) {
@@ -34,7 +65,16 @@ export function readContentDocument(): ContentDocument {
     return seeded;
   }
   const raw = fs.readFileSync(CONTENT_STORE_PATH, "utf8");
-  return JSON.parse(raw) as ContentDocument;
+  const parsed = JSON.parse(raw) as Partial<ContentDocument>;
+  const migrated = migrateContentDocument(parsed);
+  if (
+    parsed.version !== 2 ||
+    !parsed.contentCopy ||
+    !parsed.recommendationLookups
+  ) {
+    writeContentDocument(migrated);
+  }
+  return migrated;
 }
 
 export function writeContentDocument(doc: ContentDocument): void {

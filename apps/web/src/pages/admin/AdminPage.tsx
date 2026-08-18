@@ -44,6 +44,14 @@ export function AdminPage() {
           scales — seeded from fixtures until Joel’s package lands.
         </PlaceholderPanel>
         <PlaceholderPanel
+          title="Copy & lookups"
+          href="/admin/copy"
+          linkLabel="Open copy"
+        >
+          Result / safety / notification copy plus the recommendation lookup
+          table. Publish without a code release.
+        </PlaceholderPanel>
+        <PlaceholderPanel
           title="Scoring thresholds"
           href="/admin/thresholds"
           linkLabel="Open thresholds"

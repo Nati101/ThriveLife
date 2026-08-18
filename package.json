@@ -11,7 +11,7 @@
     "preview": "npm run preview -w @thrivelife/web",
     "lint": "npm run lint -w @thrivelife/web",
     "typecheck": "npm run typecheck -w @thrivelife/shared && npm run typecheck -w @thrivelife/web",
-    "test": "npm run test -w @thrivelife/shared"
+    "test": "npm run test -w @thrivelife/shared && npm run test -w @thrivelife/web"
   },
   "engines": {
     "node": ">=20"

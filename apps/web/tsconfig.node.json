@@ -20,5 +20,5 @@
       "@thrivelife/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["vite.config.ts", "server/**/*.ts"]
+  "include": ["vite.config.ts", "server/**/*.ts"],
 }

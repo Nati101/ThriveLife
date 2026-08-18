@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   UserRound,
+  HeartHandshake,
 } from "lucide-react";
 import {
   getSessionUser,
@@ -27,6 +28,7 @@ const memberLinks = [
   { href: "/check-in", label: "Check-in", icon: ClipboardCheck },
   { href: "/assessments", label: "Assessments", icon: BarChart3 },
   { href: "/onboarding", label: "Onboarding", icon: BookOpen },
+  { href: "/support", label: "Support", icon: HeartHandshake },
 ] as const;
 
 function isActivePath(pathname: string, href: string, end?: boolean) {
@@ -115,11 +117,26 @@ export function AppShell() {
               </div>
             </div>
             <Link
-              to="/dev/role"
+              to="/auth"
               className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
             >
-              Switch local role
+              Sign in (Supabase)
             </Link>
+            {import.meta.env.DEV ? (
+              <Link
+                to="/dev/role"
+                className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+              >
+                Switch local role (dev)
+              </Link>
+            ) : (
+              <Link
+                to="/privacy"
+                className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+              >
+                Privacy controls
+              </Link>
+            )}
           </div>
         </aside>
 
@@ -202,7 +219,21 @@ export function AppShell() {
             <footer className="mx-auto max-w-7xl px-4 pb-10 text-sm text-muted-foreground md:px-8">
               <p>
                 ThriveLife is a capacity-navigation tool, not a diagnosis or
-                emergency service. Support resources will live here before beta.
+                emergency service.{" "}
+                <Link
+                  to="/support"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Always-available support
+                </Link>
+                {" · "}
+                <Link
+                  to="/privacy"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Privacy
+                </Link>
+                .
               </p>
             </footer>
           </main>

@@ -12,13 +12,12 @@ import {
 export const DEV_ROLE_COOKIE = "tl_dev_role";
 
 /**
- * Auth path (later):
- * - Prefer aligning with Base44 auth once the client exports their app, OR
- * - Clerk / Auth.js for a standalone ThriveLife backend
- *
- * Hosting note: prefer Canada region for assessment data (PIPA/PIPEDA).
+ * Auth path:
+ * - Production: Supabase Auth (one identity store). Roles in `profiles.role`
+ *   and JWT `app_metadata.role` — never `user_metadata`.
+ * - Local/dev: cookie stub at /dev/role so RBAC can be tested without cloud.
  */
-export const AUTH_PROVIDER_PATH = "pending_base44_or_clerk" as const;
+export const AUTH_PROVIDER_PATH = "supabase_auth" as const;
 
 export type SessionUser = {
   id: string;

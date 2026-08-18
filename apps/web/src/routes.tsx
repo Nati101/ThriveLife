@@ -12,8 +12,14 @@ import { FullAssessmentPage } from "@/pages/assessments/FullAssessmentPage";
 import { WeeklyModeCheckPage } from "@/pages/assessments/WeeklyModeCheckPage";
 import { AdminPage } from "@/pages/admin/AdminPage";
 import { AdminContentPage } from "@/pages/admin/AdminContentPage";
+import { AdminCopyPage } from "@/pages/admin/AdminCopyPage";
 import { AdminThresholdsPage } from "@/pages/admin/AdminThresholdsPage";
 import { DevRolePage } from "@/pages/DevRolePage";
+import { SupportPage } from "@/pages/SupportPage";
+import { PrivacyPage } from "@/pages/PrivacyPage";
+import { TuneUpPage } from "@/pages/TuneUpPage";
+import { ProgressPage } from "@/pages/ProgressPage";
+import { AuthPage } from "@/pages/AuthPage";
 
 /**
  * Route map mirrors the product loop and Base44-style pages/ layout.
@@ -28,6 +34,11 @@ export const appRoutes = [
       { path: "onboarding", element: <OnboardingPage /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "check-in", element: <CheckInPage /> },
+      { path: "tune-up", element: <TuneUpPage /> },
+      { path: "progress", element: <ProgressPage /> },
+      { path: "support", element: <SupportPage /> },
+      { path: "privacy", element: <PrivacyPage /> },
+      { path: "auth", element: <AuthPage /> },
       { path: "assessments", element: <AssessmentsPage /> },
       { path: "assessments/drain-check", element: <DrainCheckPage /> },
       { path: "assessments/battery-scan", element: <BatteryScanPage /> },
@@ -48,6 +59,7 @@ export const appRoutes = [
             element: <RequireAdmin />,
             children: [{ index: true, element: <AdminThresholdsPage /> }],
           },
+          { path: "copy", element: <AdminCopyPage /> },
         ],
       },
       {

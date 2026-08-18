@@ -5,17 +5,25 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
+  applyWorkflowAction,
   canAccessContentTools,
+  canTransitionWorkflow,
   hasPermission,
   isRole,
+  ROLE_PERMISSIONS,
   type AssessmentItem,
   type Construct,
+  type ContentCopy,
   type ContentDocument,
+  type RecommendationLookup,
   type RechargeAction,
   type ResponseScale,
   type Role,
   type ScoringThreshold,
+  type Signal,
   type ThresholdAuditEntry,
+  type WorkflowAction,
+  type WorkflowStatus,
   summarizeContent,
 } from "@thrivelife/shared";
 import {
@@ -43,6 +51,10 @@ const COLLECTION_NAMES = [
   "rechargeActions",
   "scoringThresholds",
   "thresholdAuditLog",
+  "contentCopy",
+  "recommendationLookups",
+  "signals",
+  "workflowEvents",
 ] as const satisfies readonly MutableCollection[];
 
 type CollectionName = (typeof COLLECTION_NAMES)[number];
@@ -80,6 +92,18 @@ function assignCollection(
       break;
     case "thresholdAuditLog":
       doc.thresholdAuditLog = next as ContentDocument["thresholdAuditLog"];
+      break;
+    case "contentCopy":
+      doc.contentCopy = next as ContentDocument["contentCopy"];
+      break;
+    case "recommendationLookups":
+      doc.recommendationLookups = next as ContentDocument["recommendationLookups"];
+      break;
+    case "signals":
+      doc.signals = next as ContentDocument["signals"];
+      break;
+    case "workflowEvents":
+      doc.workflowEvents = next as ContentDocument["workflowEvents"];
       break;
     default:
       break;
@@ -219,10 +243,11 @@ export async function handleContentApi(
     if (pathname === "/api/health" && method === "GET") {
       sendJson(res, 200, {
         ok: true,
-        store: "json-file",
+        store: process.env.VITE_SUPABASE_URL ? "supabase+json-fallback" : "json-file",
         contentStore: "apps/web/data/content-store.json",
         sessionsStore: "apps/web/data/sessions.json",
-        note: "Postgres (Canada region) planned later",
+        supabaseUrl: process.env.VITE_SUPABASE_URL ?? null,
+        region: "ca-central-1",
       });
       return true;
     }
@@ -393,12 +418,137 @@ export async function handleContentApi(
           return true;
         }
 
+        if (collection === "contentCopy") {
+          const input = body as Partial<ContentCopy>;
+          const created: ContentCopy = {
+            id: typeof input.id === "string" ? input.id : newId("copy"),
+            kind: input.kind ?? "result",
+            key: input.key ?? `copy.${Date.now()}`,
+            title: input.title ?? "Untitled",
+            body: input.body ?? "",
+            workflowStatus: "draft",
+            isFixture: false,
+          };
+          touchContentDocument((d) => {
+            d.contentCopy.push(created);
+          });
+          sendJson(res, 201, { item: created });
+          return true;
+        }
+
+        if (collection === "recommendationLookups") {
+          const input = body as Partial<RecommendationLookup>;
+          const created: RecommendationLookup = {
+            id: typeof input.id === "string" ? input.id : newId("lookup"),
+            batteryId: input.batteryId ?? "physical",
+            signalId: input.signalId ?? null,
+            mode: input.mode ?? "green",
+            durationTier: input.durationTier ?? "2min",
+            timeOfDay: input.timeOfDay ?? "any",
+            rechargeActionId: input.rechargeActionId ?? "",
+            sortOrder: input.sortOrder ?? 100,
+            workflowStatus: "draft",
+            isFixture: false,
+          };
+          touchContentDocument((d) => {
+            d.recommendationLookups.push(created);
+          });
+          sendJson(res, 201, { item: created });
+          return true;
+        }
+
+        if (collection === "signals") {
+          const input = body as Partial<Signal>;
+          const created: Signal = {
+            id: typeof input.id === "string" ? input.id : newId("signal"),
+            batteryId: input.batteryId ?? "physical",
+            channel: input.channel ?? "body",
+            description: input.description ?? "",
+            severity: input.severity ?? "moderate",
+            relatedRechargeIds: input.relatedRechargeIds ?? [],
+          };
+          touchContentDocument((d) => {
+            d.signals.push(created);
+          });
+          sendJson(res, 201, { item: created });
+          return true;
+        }
+
         sendJson(res, 405, {
           error: "method_not_allowed",
           message: `POST not supported for ${collection}`,
         });
         return true;
       }
+    }
+
+    const workflowMatch = matchPath(
+      pathname,
+      "/api/content/:collection/:id/workflow",
+    );
+    if (workflowMatch && method === "POST") {
+      const rawCollection = workflowMatch.collection ?? "";
+      if (!isCollectionName(rawCollection)) {
+        sendJson(res, 404, { error: "unknown_collection" });
+        return true;
+      }
+      const role = requireContentTools(req, res);
+      if (!role) return true;
+      const body = (await readBody(req)) as { action?: WorkflowAction };
+      const action = body.action;
+      if (
+        action !== "submit_review" &&
+        action !== "approve" &&
+        action !== "publish" &&
+        action !== "unpublish" &&
+        action !== "archive"
+      ) {
+        sendJson(res, 400, { error: "invalid_action" });
+        return true;
+      }
+      const perms = ROLE_PERMISSIONS[role];
+      let updated: unknown = null;
+      try {
+        touchContentDocument((d) => {
+        const list = d[rawCollection];
+        if (!Array.isArray(list)) return;
+        const idx = (list as Array<{ id: string; workflowStatus?: WorkflowStatus }>).findIndex(
+          (row) => row.id === workflowMatch.id,
+        );
+        if (idx < 0) return;
+        const row = list[idx] as { id: string; workflowStatus?: WorkflowStatus };
+        const from = row.workflowStatus ?? "published";
+        if (!canTransitionWorkflow(from, action, perms)) {
+          throw new Error("forbidden_workflow");
+        }
+        const to = applyWorkflowAction(from, action);
+        row.workflowStatus = to;
+        d.workflowEvents.unshift({
+          id: newId("wf"),
+          collection: rawCollection,
+          recordId: row.id,
+          fromStatus: from,
+          toStatus: to,
+          action,
+          actorRole: role,
+          actorUserId: STUB_USER_ID,
+          at: new Date().toISOString(),
+        });
+        updated = row;
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "forbidden_workflow") {
+          sendJson(res, 403, { error: "forbidden_workflow" });
+          return true;
+        }
+        throw error;
+      }
+      if (!updated) {
+        sendJson(res, 404, { error: "not_found" });
+        return true;
+      }
+      sendJson(res, 200, { item: updated });
+      return true;
     }
 
     // Item by id

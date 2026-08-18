@@ -10,8 +10,15 @@ import type {
   AssessmentResponse,
   AssessmentSession,
   BatteryResult,
+  ConsentRecord,
+  DailyCheckIn,
   DrivingModeRow,
+  EscalationEvent,
+  OnboardingProgress,
   OverchargeFlag,
+  PrivacySettings,
+  RestartRailEvent,
+  TuneUp,
 } from "@thrivelife/shared";
 import type { BatteryId } from "@thrivelife/shared";
 
@@ -57,6 +64,21 @@ export type SessionsDocument = {
   scanRecommendations: ScanRecommendationRow[];
   drainResults: DrainResultRow[];
   signalCountLogs: SignalCountLogRow[];
+  checkIns: DailyCheckIn[];
+  restartRail: RestartRailEvent[];
+  tuneUps: TuneUp[];
+  escalationEvents: EscalationEvent[];
+  consentRecords: ConsentRecord[];
+  onboarding: OnboardingProgress[];
+  privacyByUser: Record<string, PrivacySettings>;
+  telemetry: Array<{
+    id: string;
+    userId: string;
+    sessionId: string | null;
+    kind: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+  }>;
 };
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -78,6 +100,14 @@ function emptyDocument(now = new Date().toISOString()): SessionsDocument {
     scanRecommendations: [],
     drainResults: [],
     signalCountLogs: [],
+    checkIns: [],
+    restartRail: [],
+    tuneUps: [],
+    escalationEvents: [],
+    consentRecords: [],
+    onboarding: [],
+    privacyByUser: {},
+    telemetry: [],
   };
 }
 
@@ -95,7 +125,28 @@ export function readSessionsDocument(): SessionsDocument {
     return seeded;
   }
   const raw = fs.readFileSync(SESSIONS_STORE_PATH, "utf8");
-  return JSON.parse(raw) as SessionsDocument;
+  const parsed = JSON.parse(raw) as Partial<SessionsDocument>;
+  const blank = emptyDocument();
+  return {
+    ...blank,
+    ...parsed,
+    checkIns: parsed.checkIns ?? [],
+    restartRail: parsed.restartRail ?? [],
+    tuneUps: parsed.tuneUps ?? [],
+    escalationEvents: parsed.escalationEvents ?? [],
+    consentRecords: parsed.consentRecords ?? [],
+    onboarding: parsed.onboarding ?? [],
+    privacyByUser: parsed.privacyByUser ?? {},
+    telemetry: parsed.telemetry ?? [],
+    sessions: parsed.sessions ?? [],
+    responses: parsed.responses ?? [],
+    batteryResults: parsed.batteryResults ?? [],
+    overchargeFlags: parsed.overchargeFlags ?? [],
+    drivingModes: parsed.drivingModes ?? [],
+    scanRecommendations: parsed.scanRecommendations ?? [],
+    drainResults: parsed.drainResults ?? [],
+    signalCountLogs: parsed.signalCountLogs ?? [],
+  };
 }
 
 export function writeSessionsDocument(doc: SessionsDocument): void {

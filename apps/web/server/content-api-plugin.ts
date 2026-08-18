@@ -23,10 +23,16 @@ type AssessmentApiModule = {
   ) => Promise<boolean>;
 };
 
+type MemberApiModule = {
+  handleMemberApi: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ) => Promise<boolean>;
+};
+
 /**
  * Vite middleware plugin — mounts /api/* during `npm run dev`.
- * Loads TypeScript handlers via ssrLoadModule so @thrivelife/shared .ts works.
- * Persistence: content-store.json + sessions.json under apps/web/data/ (gitignored).
  */
 export function thrivelifeContentApiPlugin(): Plugin {
   return {
@@ -34,6 +40,7 @@ export function thrivelifeContentApiPlugin(): Plugin {
     configureServer(server) {
       const contentApiPath = path.resolve(serverDir, "content-api.ts");
       const assessmentApiPath = path.resolve(serverDir, "assessment-api.ts");
+      const memberApiPath = path.resolve(serverDir, "member-api.ts");
       let ready = false;
 
       server.middlewares.use((req, res, next) => {
@@ -45,6 +52,9 @@ export function thrivelifeContentApiPlugin(): Plugin {
             const assessmentApi = (await server.ssrLoadModule(
               assessmentApiPath,
             )) as AssessmentApiModule;
+            const memberApi = (await server.ssrLoadModule(
+              memberApiPath,
+            )) as MemberApiModule;
             if (!ready) {
               contentApi.ensureContentStoreReady();
               assessmentApi.ensureAssessmentApiReady();
@@ -52,6 +62,7 @@ export function thrivelifeContentApiPlugin(): Plugin {
             }
             const host = req.headers.host ?? "127.0.0.1";
             const url = new URL(req.url ?? "/", `http://${host}`);
+            if (await memberApi.handleMemberApi(req, res, url)) return;
             if (await assessmentApi.handleAssessmentApi(req, res, url)) return;
             if (await contentApi.handleContentApi(req, res, url)) return;
             next();
