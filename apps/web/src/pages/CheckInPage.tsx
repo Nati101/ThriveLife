@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import {
   CHECK_IN_COMPLETION_LABELS,
   DRIVING_MODES,
-  FIXTURE_BATTERIES,
   RECHARGE_DURATION_TIERS,
   RESTART_RAIL_MESSAGE,
+  type BatteryDefinition,
 } from "@thrivelife/shared";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
-import { fetchRestartRail, postRestartRail, saveCheckIn } from "@/lib/member-api";
+import { fetchDashboard, fetchRestartRail, postRestartRail, saveCheckIn } from "@/lib/member-api";
 
 export function CheckInPage() {
   const [mode, setMode] = useState("");
@@ -19,6 +19,8 @@ export function CheckInPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<string | null>(null);
+  const [batteries, setBatteries] = useState<BatteryDefinition[]>([]);
+  const ready = Boolean(mode && batteryId && recharge && completion);
 
   useEffect(() => {
     void fetchRestartRail()
@@ -26,6 +28,12 @@ export function CheckInPage() {
         setMetrics(
           `Returns: ${row.metrics.successfulReturns} · Plan B uses: ${row.metrics.planBUsage} · 4-of-7: ${row.metrics.fourOfSeven.completedCount}/${row.metrics.fourOfSeven.windowSize}`,
         );
+      })
+      .catch(() => undefined);
+    void fetchDashboard()
+      .then((row) => {
+        const list = row.batteries as BatteryDefinition[] | undefined;
+        if (Array.isArray(list) && list.length > 0) setBatteries(list);
       })
       .catch(() => undefined);
   }, []);
@@ -86,21 +94,26 @@ export function CheckInPage() {
           <legend className="text-sm font-semibold text-gray-800">
             2. Which battery needs the most support?
           </legend>
+          {batteries.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Loading batteries…</p>
+          ) : (
           <select
             className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             value={batteryId}
             onChange={(e) => setBatteryId(e.target.value)}
             required
+            aria-label="Which battery needs the most support?"
           >
             <option value="" disabled>
               Choose a battery
             </option>
-            {FIXTURE_BATTERIES.map((b) => (
+            {batteries.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>
             ))}
           </select>
+          )}
         </fieldset>
 
         <fieldset>
@@ -170,7 +183,8 @@ export function CheckInPage() {
         {message ? <p className="text-sm text-foreground">{message}</p> : null}
         <button
           type="submit"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          disabled={!ready}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           Save check-in
         </button>

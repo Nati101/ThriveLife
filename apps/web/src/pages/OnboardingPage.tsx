@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FIXTURE_BATTERIES } from "@thrivelife/shared";
+import type { BatteryDefinition } from "@thrivelife/shared";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
-import { acceptConsent, fetchOnboarding, saveOnboarding } from "@/lib/member-api";
+import { acceptConsent, fetchDashboard, fetchOnboarding, saveOnboarding } from "@/lib/member-api";
 
 const CONTEXT_FIELDS = [
   { key: "season", label: "What season of life are you in?" },
@@ -20,6 +20,7 @@ export function OnboardingPage() {
   const [context, setContext] = useState<Record<string, string>>({});
   const [ageOk, setAgeOk] = useState(false);
   const [consentOk, setConsentOk] = useState(false);
+  const [batteries, setBatteries] = useState<BatteryDefinition[]>([]);
 
   useEffect(() => {
     void fetchOnboarding().then((row) => {
@@ -29,6 +30,12 @@ export function OnboardingPage() {
         setContext(progress.contextAnswers as Record<string, string>);
       }
     });
+    void fetchDashboard()
+      .then((row) => {
+        const list = row.batteries as BatteryDefinition[] | undefined;
+        if (Array.isArray(list)) setBatteries(list);
+      })
+      .catch(() => undefined);
   }, []);
 
   async function go(next: number, extra?: Record<string, unknown>) {
@@ -171,7 +178,7 @@ export function OnboardingPage() {
             is where the product proves itself.
           </p>
           <ul className="mt-3 list-disc pl-5 text-sm text-muted-foreground">
-            {FIXTURE_BATTERIES.slice(0, 2).map((b) => (
+            {batteries.slice(0, 2).map((b) => (
               <li key={b.id}>{b.name} is a common first battery.</li>
             ))}
           </ul>

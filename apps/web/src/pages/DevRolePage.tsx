@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import type { Role } from "@thrivelife/shared";
 import {
   ROLES,
@@ -11,6 +11,10 @@ import { PageHeader } from "@/components/PageHeader";
 export function DevRolePage() {
   const user = getSessionUser();
   const navigate = useNavigate();
+
+  if (!import.meta.env.DEV) {
+    return <Navigate to="/" replace />;
+  }
 
   function chooseRole(role: Role) {
     setDevRole(role);

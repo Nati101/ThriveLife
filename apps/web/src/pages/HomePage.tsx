@@ -14,8 +14,8 @@ export function HomePage() {
           className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
           role="status"
         >
-          That area needs an editor, reviewer, or admin role. Switch role under
-          Dev → Role, then try again.
+          That area needs an editor, reviewer, or admin role. In local
+          development, switch role at /dev/role, then try again.
         </p>
       ) : null}
 

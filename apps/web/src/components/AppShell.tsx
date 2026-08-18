@@ -55,6 +55,9 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50/50 text-foreground">
+      <a href="#main" className="skip-link">
+        Skip to main content
+      </a>
       <FixtureBanner />
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden flex-col border-r border-border bg-white shadow-sm md:flex md:w-64">
@@ -197,22 +200,34 @@ export function AppShell() {
                         </li>
                       );
                     })}
-                    <li>
-                      <Link
-                        to="/dev/role"
-                        className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-gray-100"
-                      >
-                        <UserRound size={20} />
-                        <span>Switch role</span>
-                      </Link>
-                    </li>
+                    {import.meta.env.DEV ? (
+                      <li>
+                        <Link
+                          to="/dev/role"
+                          className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-gray-100"
+                        >
+                          <UserRound size={20} />
+                          <span>Switch role</span>
+                        </Link>
+                      </li>
+                    ) : (
+                      <li>
+                        <Link
+                          to="/privacy"
+                          className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-gray-100"
+                        >
+                          <UserRound size={20} />
+                          <span>Privacy</span>
+                        </Link>
+                      </li>
+                    )}
                   </ul>
                 </nav>
               </div>
             </>
           ) : null}
 
-          <main className="relative flex-1 overflow-auto">
+          <main id="main" className="relative flex-1 overflow-auto">
             <div className="mx-auto max-w-7xl p-4 pb-24 md:p-8">
               <Outlet />
             </div>
@@ -232,6 +247,20 @@ export function AppShell() {
                   className="font-medium text-primary underline-offset-2 hover:underline"
                 >
                   Privacy
+                </Link>
+                {" · "}
+                <Link
+                  to="/privacy-policy"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Privacy policy (draft)
+                </Link>
+                {" · "}
+                <Link
+                  to="/terms"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Terms (draft)
                 </Link>
                 .
               </p>

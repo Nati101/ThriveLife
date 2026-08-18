@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 
@@ -66,23 +66,29 @@ export function AuthPage() {
         </p>
       ) : null}
       <form className="space-y-3 rounded-xl border border-border bg-white p-5" onSubmit={(e) => void onSubmit(e)}>
-        <input
-          type="email"
-          required
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          required
-          minLength={8}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <label className="block text-sm">
+          <span className="font-medium text-gray-800">Email</span>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-medium text-gray-800">Password</span>
+          <input
+            type="password"
+            required
+            minLength={8}
+            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
         {mode === "sign-up" ? (
           <label className="flex items-start gap-2 text-sm">
             <input
@@ -109,6 +115,20 @@ export function AuthPage() {
       >
         {mode === "sign-in" ? "Need an account?" : "Already have an account?"}
       </button>
+      <p className="mt-6 text-xs text-muted-foreground">
+        By creating an account you agree to the{" "}
+        <Link to="/terms" className="font-medium text-primary underline-offset-2 hover:underline">
+          Terms (draft)
+        </Link>{" "}
+        and{" "}
+        <Link
+          to="/privacy-policy"
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Privacy policy (draft)
+        </Link>
+        . Legal review is still required before beta.
+      </p>
     </div>
   );
 }

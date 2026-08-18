@@ -81,6 +81,7 @@ export function DashboardPage() {
   };
   const escalation = data.escalation as { tier: 1 | 2 | null; message: string | null };
   const copy = data.copy as { safety?: { body: string } | null };
+  const reminders = data.reminders as { due?: string[] } | undefined;
 
   return (
     <div className="space-y-8">
@@ -96,6 +97,24 @@ export function DashboardPage() {
         title="Five things that matter today"
         description="Battery rings come from the Full Assessment. Today’s markers come from the Battery Scan. They are never averaged."
       />
+
+      {reminders?.due && reminders.due.length > 0 ? (
+        <section className="rounded-xl border border-border bg-white p-5">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Full Assessment is still optional
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            You skipped it during onboarding. About nine minutes fills in the
+            seven-battery dashboard. Nothing is lost if today is not the day.
+          </p>
+          <Link
+            to="/assessments/full-assessment"
+            className="mt-3 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Take Full Assessment
+          </Link>
+        </section>
+      ) : null}
 
       {authority.conflictNote ? (
         <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground">

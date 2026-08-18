@@ -20,6 +20,8 @@ import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TuneUpPage } from "@/pages/TuneUpPage";
 import { ProgressPage } from "@/pages/ProgressPage";
 import { AuthPage } from "@/pages/AuthPage";
+import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
+import { TermsPage } from "@/pages/TermsPage";
 
 /**
  * Route map mirrors the product loop and Base44-style pages/ layout.
@@ -38,6 +40,8 @@ export const appRoutes = [
       { path: "progress", element: <ProgressPage /> },
       { path: "support", element: <SupportPage /> },
       { path: "privacy", element: <PrivacyPage /> },
+      { path: "privacy-policy", element: <PrivacyPolicyPage /> },
+      { path: "terms", element: <TermsPage /> },
       { path: "auth", element: <AuthPage /> },
       { path: "assessments", element: <AssessmentsPage /> },
       { path: "assessments/drain-check", element: <DrainCheckPage /> },

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
 import { deleteMyData, exportMyData, fetchPrivacy, savePrivacy } from "@/lib/member-api";
@@ -54,6 +55,8 @@ export function PrivacyPage() {
                 type="button"
                 className="rounded-lg border border-border px-3 py-1 text-xs"
                 onClick={() => void toggle(key)}
+                aria-pressed={Boolean(settings[key])}
+                aria-label={`${label}: ${settings[key] ? "on" : "off"}`}
               >
                 {settings[key] ? "On" : "Off"}
               </button>
@@ -83,8 +86,19 @@ export function PrivacyPage() {
       </div>
       {message ? <p className="text-sm">{message}</p> : null}
       <p className="text-xs text-muted-foreground">
-        Privacy policy and Terms are Legal deliverables before beta. Alberta PIPA /
-        PIPEDA review is still required. Hosting target: Canada Central.
+        Read the{" "}
+        <Link
+          to="/privacy-policy"
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          privacy policy (DRAFT)
+        </Link>{" "}
+        and{" "}
+        <Link to="/terms" className="font-medium text-primary underline-offset-2 hover:underline">
+          terms of use (DRAFT)
+        </Link>
+        . Alberta PIPA / PIPEDA review is still required. Hosting target: Canada
+        Central.
       </p>
       <SupportFooter />
     </div>
