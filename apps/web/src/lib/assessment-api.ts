@@ -8,7 +8,7 @@ import type {
   InstrumentId,
   ResponseScale,
 } from "@thrivelife/shared";
-import { getSessionUser } from "@/lib/auth";
+import { apiFetch } from "@/lib/api-fetch";
 
 export type AssessmentApiError = {
   error: string;
@@ -16,33 +16,6 @@ export type AssessmentApiError = {
   locked?: boolean;
   daysSince?: number | null;
 };
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  headers.set("Accept", "application/json");
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  const role = getSessionUser().role;
-  headers.set("x-thrivelife-role", role);
-
-  const res = await fetch(path, {
-    ...init,
-    headers,
-    credentials: "same-origin",
-  });
-  const data = (await res.json()) as T | AssessmentApiError;
-  if (!res.ok) {
-    const err = data as AssessmentApiError;
-    const error = new Error(
-      err.message ?? err.error ?? `Request failed (${res.status})`,
-    ) as Error & { status?: number; payload?: AssessmentApiError };
-    error.status = res.status;
-    error.payload = err;
-    throw error;
-  }
-  return data as T;
-}
 
 export type InstrumentBootstrap = {
   instrument: InstrumentDefinition;

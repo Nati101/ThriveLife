@@ -8,41 +8,7 @@ import type {
   ScoringThreshold,
   ThresholdAuditEntry,
 } from "@thrivelife/shared";
-import { DEV_ROLE_COOKIE, getSessionUser } from "@/lib/auth";
-
-export type ContentApiError = {
-  error: string;
-  message?: string;
-};
-
-async function apiFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const role = getSessionUser().role;
-  const headers = new Headers(init?.headers);
-  headers.set("Accept", "application/json");
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  // Cookie is sent same-origin; also set header fallback for clarity in stubs
-  if (!document.cookie.includes(`${DEV_ROLE_COOKIE}=`)) {
-    document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; SameSite=Lax`;
-  }
-
-  const res = await fetch(path, {
-    ...init,
-    headers,
-    credentials: "same-origin",
-  });
-
-  const data = (await res.json()) as T | ContentApiError;
-  if (!res.ok) {
-    const err = data as ContentApiError;
-    throw new Error(err.message ?? err.error ?? `Request failed (${res.status})`);
-  }
-  return data as T;
-}
+import { apiFetch } from "@/lib/api-fetch";
 
 export function fetchContentDocument() {
   return apiFetch<{ summary: ContentSummary; document: ContentDocument }>(

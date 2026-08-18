@@ -8,7 +8,10 @@ import { thrivelifeContentApiPlugin } from "./server/content-api-plugin.ts";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
+const pagesBase = process.env.GITHUB_PAGES === "true" ? "/ThriveLife/" : "/";
+
 export default defineConfig({
+  base: process.env.VITE_BASE || pagesBase,
   plugins: [react(), tailwindcss(), thrivelifeContentApiPlugin()],
   resolve: {
     alias: {

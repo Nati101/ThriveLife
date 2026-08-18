@@ -1,25 +1,4 @@
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  headers.set("Accept", "application/json");
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  headers.set("x-thrivelife-tz", tz);
-  const res = await fetch(path, { ...init, headers, credentials: "same-origin" });
-  if (res.status === 204) return { skipped: true } as T;
-  const data = (await res.json()) as T & { error?: string; message?: string };
-  if (!res.ok) {
-    const err = new Error(data.message ?? data.error ?? `Request failed (${res.status})`) as Error & {
-      status?: number;
-      payload?: unknown;
-    };
-    err.status = res.status;
-    err.payload = data;
-    throw err;
-  }
-  return data;
-}
+import { apiFetch } from "@/lib/api-fetch";
 
 export function fetchDashboard() {
   return apiFetch<Record<string, unknown>>("/api/me/dashboard");

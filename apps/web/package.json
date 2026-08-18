@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "typecheck": "tsc -b --pretty false",
-    "test": "tsx --test server/api-contract.test.ts server/runtime-api.test.ts",
+    "test": "tsx --test server/api-contract.test.ts server/runtime-api.test.ts server/static-backend.test.ts",
     "test:e2e": "playwright test",
     "preview": "vite preview"
   },
