@@ -21,4 +21,5 @@
     }
   },
   "include": ["vite.config.ts", "server/**/*.ts"],
+  "exclude": ["server/**/*.test.ts"],
 }

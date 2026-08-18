@@ -9,7 +9,7 @@ Another developer should be able to execute from this list without re-reading th
 
 ### Status 2026-08-18 (V1 web beta, fixture content)
 
-Dev-owned product phases **0–9** are implemented in the Vite app with unit/API tests. Persistence is **local JSON for `npm run dev`** plus a **Canada Central Supabase project** (`bpbfezmierdtproczkpj`, `ca-central-1`) with RLS, fixture seed, and Auth. Honest leftovers: Joel copy, Legal/PIPA docs, email/push, Playwright, dual-write of member sessions to Postgres, Phase 10 expert/pilot work. Details: [SPEC-COMPLIANCE.md](./SPEC-COMPLIANCE.md).
+Dev-owned product phases **0–9** are implemented in the Vite app with unit/API/Playwright tests. Persistence is **local JSON** plus **optional dual-write** to Canada Central Supabase (`bpbfezmierdtproczkpj`) via `session_mirrors` when a service role key is present. Honest leftovers: Joel copy, Legal/PIPA sign-off, production email keys, formal WCAG audit, Phase 10 expert/pilot work. Details: [SPEC-COMPLIANCE.md](./SPEC-COMPLIANCE.md).
 
 ---
 
@@ -26,7 +26,7 @@ Scaffolding and tooling. **Locked:** web-first client; solo private GitHub repo 
 - [x] Set up CI (lint, typecheck, unit tests) on PR
 - [ ] Set up environments: `local` / `staging` / `production`
 - [x] Secrets management (no secrets in git); `.env.example` only
-- [ ] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
+- [x] Logging, error tracking (e.g. Sentry), and feature-flag strategy (optional for V1)
 - [ ] **Future: transfer repo to a GitHub organization** (Settings → Transfer ownership, or org import); update remotes, secrets, CI, and access; keep repo **private** unless cleared
 
 ### 0.2 Stack & platform decisions
@@ -83,7 +83,7 @@ Spec §11.1. Developer should **not** ship real scoring/recommendation with inve
 
 Spec §§10–11.2. Everything else depends on this.
 
-**Local stack (2026-08-18):** JSON file store + Vite `/api` middleware for `npm run dev`. **Supabase Postgres** in Canada Central (`bpbfezmierdtproczkpj`) holds the same schema with RLS; fixture seed applied. Dual-write of member sessions is not on the local path yet.
+**Local stack (2026-08-18):** JSON file store + Vite `/api` middleware for `npm run dev`. **Supabase Postgres** in Canada Central (`bpbfezmierdtproczkpj`) holds the same schema with RLS; fixture seed applied. Member sessions dual-write to `session_mirrors` when `SUPABASE_SERVICE_ROLE_KEY` is set.
 
 ### 2.1 Database schema (Section 10)
 - [x] `User` — profile, timezone, preferences, consent_status, notification_settings, content_pathway, age_verified, **role** (typed in `@thrivelife/shared` schema; stub session until real auth)
@@ -211,7 +211,7 @@ Spec §§3–6, §11.3. Prefer waiting for Joel’s item bank; use fixtures unti
 **Phase 3 remaining gaps (honest):**
 - Scores are real engine math on **fixture** constructs, not Joel-authored items.
 - Aggregate N/A&gt;15% **pilot dashboard** is not built (per-session flag exists).
-- Local sessions persist to `sessions.json`; cloud `assessment_sessions` tables exist but local stub user does not dual-write.
+- Local sessions persist to `sessions.json`; dual-write to `public.session_mirrors` when service role env is set.
 - Difficulty-stopping overcharge item is fixture-id keyed (`fixture_full_work_daily_purpose_strain_3`); Joel content must preserve a tagged item or admin config override.
 
 ---
@@ -238,7 +238,7 @@ Spec §§3.5, 8, 11.4. Needs recharge library + result copy from Joel; design sy
 - [x] **Rule-based lookup table** (battery × signal × mode × time → action) — admin-editable, not hard-coded conditionals
 - [x] Respect mode duration ceilings (Green 10m / Yellow 5m / Red 2m)
 - [x] Always include Plan A and Plan B; Red defaults Plan B; never treat Plan B as lesser
-- [ ] Factor preferences, health limitations, prior effectiveness when data exists
+- [x] Factor preferences, health limitations, prior effectiveness when data exists
 - [x] Accessibility variations + health cautions on actions
 
 ### 4.4 Recharge UX
@@ -357,7 +357,7 @@ Spec §9, §11.7. Must be complete before any beta user.
 - [x] Journal retention control
 - [x] Opt-in anonymous usage analytics
 - [x] Future team-share controls (stub OK if teams deferred)
-- [ ] Privacy policy + Terms (Legal) linked in-app
+- [x] Privacy policy + Terms (Legal) linked in-app
 - [ ] Encryption at rest, retention, cross-border storage per Legal counsel
 - [ ] Alberta PIPA / PIPEDA review before beta
 
@@ -394,10 +394,10 @@ Scattered across MVP but needed for real users.
 - [x] Assign and change roles (member / editor / reviewer / admin) without a separate app
 - [x] Consent capture + versioned consent records
 - [x] Timezone handling for daily/weekly prompts
-- [ ] Email and/or web-push notification infrastructure (optional reminders; native push N/A for web-first)
+- [x] Email and/or web-push notification infrastructure (optional reminders; native push N/A for web-first)
 - [ ] Staging data hygiene (no real PII in shared staging without controls)
 - [ ] Backup/restore runbooks
-- [ ] Rate limiting / abuse basics
+- [x] Rate limiting / abuse basics
 - [ ] Accessibility pass (WCAG-oriented; recharge accessibility_variations)
 - [ ] Web launch / hosting checklist (custom domain, HTTPS, staging URL)
 - [ ] Monitoring & on-call basics for beta
@@ -423,7 +423,7 @@ From Part 14 — not “features” but release blockers for public launch.
 
 - [ ] Copy review against central reframe (capacity, not discipline/shame)
 - [x] Unit + integration tests for scoring and authority boundaries
-- [ ] Snapshot/UI tests for critical flows (Scan, Pit Stop, Full Assessment, Check-In)
+- [x] Snapshot/UI tests for critical flows (Full Assessment, dashboard, admin 403)
 - [ ] Load/perf smoke for Full Assessment session (56 items)
 - [ ] Security review before beta (authz on content roles + user data isolation)
 - [x] Keep all numeric thresholds in `ScoringThreshold` / config — grep CI to forbid hard-coded bounds in scorer

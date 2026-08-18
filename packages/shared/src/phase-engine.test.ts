@@ -26,6 +26,10 @@ import {
   resolveRecommendationSource,
   strongestSupportBattery,
   summarizeRestartRail,
+  dueFullAssessmentPrompts,
+  inferHealthLimits,
+  ineffectiveActionIds,
+  reminderMessage,
   type BatteryResult,
 } from "./index";
 
@@ -270,5 +274,97 @@ describe("escalation tiers", () => {
       lastTier2At: null,
     });
     assert.equal(result.tier, 2);
+  });
+});
+
+describe("Day 3/7 Full Assessment re-prompts", () => {
+  it("is not due without a decline timestamp", () => {
+    assert.deepEqual(
+      dueFullAssessmentPrompts({
+        declinedFullAssessmentAt: null,
+        day3PromptedAt: null,
+        day7PromptedAt: null,
+      }),
+      [],
+    );
+  });
+
+  it("surfaces day3 then day7 by elapsed time", () => {
+    const declined = "2026-08-01T00:00:00.000Z";
+    assert.deepEqual(
+      dueFullAssessmentPrompts(
+        { declinedFullAssessmentAt: declined, day3PromptedAt: null, day7PromptedAt: null },
+        "2026-08-04T00:00:00.000Z",
+      ),
+      ["day3"],
+    );
+    assert.deepEqual(
+      dueFullAssessmentPrompts(
+        { declinedFullAssessmentAt: declined, day3PromptedAt: null, day7PromptedAt: null },
+        "2026-08-08T00:00:00.000Z",
+      ),
+      ["day3", "day7"],
+    );
+    assert.deepEqual(
+      dueFullAssessmentPrompts(
+        {
+          declinedFullAssessmentAt: declined,
+          day3PromptedAt: "2026-08-04T00:00:00.000Z",
+          day7PromptedAt: null,
+        },
+        "2026-08-08T00:00:00.000Z",
+      ),
+      ["day7"],
+    );
+  });
+
+  it("draft reminder copy is labeled DRAFT / FIXTURE", () => {
+    assert.match(reminderMessage("day3").subject, /DRAFT/);
+    assert.match(reminderMessage("day7").text, /FIXTURE|DRAFT/);
+  });
+});
+
+describe("preference and health-aware recs", () => {
+  it("infers physical movement limits from onboarding health context", () => {
+    const limits = inferHealthLimits({
+      contextAnswers: { health: "Knee injury — avoid walking" },
+    });
+    assert.equal(limits.avoidPhysicalMovement, true);
+    assert.equal(limits.preferSeated, true);
+  });
+
+  it("prefers Plan B when check-in history is mostly Plan B", () => {
+    const pick = pickTodayRecharge({
+      lookups: FIXTURE_RECOMMENDATION_LOOKUPS,
+      actions: FIXTURE_RECHARGE_ACTIONS,
+      mode: "green",
+      priority: {
+        drainCompletedThisSession: false,
+        scanSetAt: new Date().toISOString(),
+        scanRecommendedBatteryId: "mental",
+        fullAssessmentCompletedAt: null,
+        fullMostDepletedBatteryId: null,
+      },
+      memberContext: {
+        checkIns: [
+          { rechargeSelected: "plan_b", completion: "yes", batteryId: "mental" },
+          { rechargeSelected: "plan_b", completion: "yes", batteryId: "mental" },
+          { rechargeSelected: "2min", completion: "yes", batteryId: "mental" },
+        ],
+      },
+    });
+    assert.equal(pick.preferredPlan, "plan_b");
+    assert.ok(pick.action);
+  });
+
+  it("marks repeated not_today recharge ids as ineffective", () => {
+    const ids = ineffectiveActionIds(
+      [
+        { rechargeSelected: "fixture_recharge_physical_2min", completion: "not_today", batteryId: "physical" },
+        { rechargeSelected: "fixture_recharge_physical_2min", completion: "not_today", batteryId: "physical" },
+      ],
+      "physical",
+    );
+    assert.deepEqual(ids, ["fixture_recharge_physical_2min"]);
   });
 });
