@@ -271,8 +271,8 @@ export function resolveDashboardAuthority(
     setAt: drain?.completedAt ?? null,
   };
 
-  // Conflict display (§3.5 / §4.2 Phase 4): note when Scan marker and ring diverge.
-  let conflictNote: string | null = null;
+  // Conflict display (§3.5): name both sources; never merge.
+  const conflicts: string[] = [];
   for (const ring of batteryRings) {
     const marker = scanMarkers.find((m) => m.batteryId === ring.batteryId);
     if (
@@ -292,12 +292,31 @@ export function resolveDashboardAuthority(
       const scanLevel =
         marker.value === "low" ? 0 : marker.value === "steady" ? 2 : 3;
       if (Math.abs(ringLevel - scanLevel) > 1) {
-        conflictNote =
-          "Battery rings use Full Assessment; markers use today’s Scan — they are shown separately and never merged.";
-        break;
+        const usual =
+          ring.value === "low"
+            ? "Low"
+            : ring.value === "strained_but_functioning"
+              ? "Strained but Functioning"
+              : ring.value === "steady"
+                ? "Steady"
+                : "Well Charged";
+        const today =
+          marker.value === "low"
+            ? "Low"
+            : marker.value === "steady"
+              ? "Steady"
+              : "Full";
+        const name = ring.batteryId.replaceAll("_", " ");
+        conflicts.push(
+          `Your ${name} battery usually reads ${usual}. Today you marked it ${today}.`,
+        );
       }
     }
   }
+  const conflictNote =
+    conflicts.length > 0
+      ? `${conflicts.join(" ")} Battery rings use Full Assessment; markers use today’s Scan — they are shown separately and never merged.`
+      : null;
 
   void allBatteryIds;
   return {

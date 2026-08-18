@@ -1,6 +1,6 @@
 /**
- * Local content document for Phase 2 admin CRUD.
- * Persisted as JSON on disk until Canada-region Postgres lands.
+ * Local content document for admin CRUD.
+ * JSON file locally; same shape seeded into Supabase Postgres.
  */
 
 import type { BatteryDefinition } from "./batteries";
@@ -12,7 +12,10 @@ import type {
 } from "./instruments";
 import type { RechargeAction } from "./recharge";
 import type { ScoringThreshold } from "./scoring";
-import type { ThresholdAuditEntry } from "./schema";
+import type { ThresholdAuditEntry, Signal } from "./schema";
+import type { ContentCopy } from "./copy";
+import type { RecommendationLookup } from "./recommendations";
+import type { WorkflowStatus } from "./workflow";
 import { FIXTURE_BATTERIES } from "./fixtures/batteries";
 import {
   FIXTURE_INSTRUMENTS,
@@ -24,10 +27,13 @@ import {
 } from "./fixtures/items";
 import {
   FIXTURE_RECHARGE_ACTIONS,
+  FIXTURE_RECOMMENDATION_LOOKUPS,
   FIXTURE_SCORING_THRESHOLDS,
 } from "./fixtures/recharge";
+import { FIXTURE_CONTENT_COPY } from "./fixtures/copy";
+import { FIXTURE_SIGNALS } from "./fixtures/signals";
 
-export const CONTENT_STORE_VERSION = 1 as const;
+export const CONTENT_STORE_VERSION = 2 as const;
 
 export type ContentCollection =
   | "batteries"
@@ -36,7 +42,22 @@ export type ContentCollection =
   | "responseScales"
   | "items"
   | "rechargeActions"
-  | "scoringThresholds";
+  | "scoringThresholds"
+  | "contentCopy"
+  | "recommendationLookups"
+  | "signals";
+
+export type WorkflowEvent = {
+  id: string;
+  collection: string;
+  recordId: string;
+  fromStatus: WorkflowStatus;
+  toStatus: WorkflowStatus;
+  action: string;
+  actorRole: string;
+  actorUserId: string;
+  at: string;
+};
 
 export type ContentDocument = {
   version: typeof CONTENT_STORE_VERSION;
@@ -50,6 +71,10 @@ export type ContentDocument = {
   rechargeActions: RechargeAction[];
   scoringThresholds: ScoringThreshold[];
   thresholdAuditLog: ThresholdAuditEntry[];
+  contentCopy: ContentCopy[];
+  recommendationLookups: RecommendationLookup[];
+  signals: Signal[];
+  workflowEvents: WorkflowEvent[];
 };
 
 export type ContentSummary = {
@@ -61,6 +86,10 @@ export type ContentSummary = {
   rechargeActions: number;
   scoringThresholds: number;
   thresholdAuditEntries: number;
+  contentCopy: number;
+  recommendationLookups: number;
+  signals: number;
+  workflowEvents: number;
   seededAt: string;
   updatedAt: string;
 };
@@ -75,6 +104,10 @@ export function summarizeContent(doc: ContentDocument): ContentSummary {
     rechargeActions: doc.rechargeActions.length,
     scoringThresholds: doc.scoringThresholds.length,
     thresholdAuditEntries: doc.thresholdAuditLog.length,
+    contentCopy: doc.contentCopy.length,
+    recommendationLookups: doc.recommendationLookups.length,
+    signals: doc.signals.length,
+    workflowEvents: doc.workflowEvents.length,
     seededAt: doc.seededAt,
     updatedAt: doc.updatedAt,
   };
@@ -96,6 +129,10 @@ export function createSeedContentDocument(
     rechargeActions: structuredClone(FIXTURE_RECHARGE_ACTIONS),
     scoringThresholds: structuredClone(FIXTURE_SCORING_THRESHOLDS),
     thresholdAuditLog: [],
+    contentCopy: structuredClone(FIXTURE_CONTENT_COPY),
+    recommendationLookups: structuredClone(FIXTURE_RECOMMENDATION_LOOKUPS),
+    signals: structuredClone(FIXTURE_SIGNALS),
+    workflowEvents: [],
   };
 }
 
@@ -111,4 +148,10 @@ export function groupItemsByTimeframe(items: AssessmentItem[]) {
   const moment = items.filter((item) => item.timeframe === "moment");
   const twoWeek = items.filter((item) => item.timeframe === "two_week");
   return { moment, twoWeek };
+}
+
+export function publishedItems(doc: ContentDocument): AssessmentItem[] {
+  return doc.items.filter(
+    (item) => item.active && (item.workflowStatus ?? "published") === "published",
+  );
 }

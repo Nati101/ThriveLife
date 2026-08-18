@@ -115,6 +115,7 @@ export type DailyCheckIn = {
   completion: CheckInCompletion;
   note: string | null;
   date: string;
+  timezone?: string;
 };
 
 export type TuneUp = {
@@ -125,7 +126,9 @@ export type TuneUp = {
   warningLight: string;
   dailyActionId: string | null;
   supportAction: string | null;
+  winDefinition: string | null;
   startDate: string;
+  reviewDate: string | null;
   reviewOutcomes: Record<string, unknown>;
 };
 
@@ -136,6 +139,26 @@ export type EscalationEvent = {
   triggeredAt: string;
   messageShown: string;
   dismissed: boolean;
+  dismissedAt: string | null;
+};
+
+export type ConsentRecord = {
+  id: string;
+  userId: string;
+  version: string;
+  acceptedAt: string;
+  withdrawnAt: string | null;
+};
+
+export type OnboardingProgress = {
+  userId: string;
+  step: number;
+  declinedFullAssessmentAt: string | null;
+  firstRechargeCompletedAt: string | null;
+  contextAnswers: Record<string, string>;
+  day3PromptedAt: string | null;
+  day7PromptedAt: string | null;
+  completedAt: string | null;
 };
 
 export type ThresholdAuditEntry = {

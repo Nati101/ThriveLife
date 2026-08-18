@@ -38,6 +38,8 @@ export type BatteryDefinition = {
   /** Short capacity-navigation framing — not clinical. */
   covers: string;
   thinkOfItAs: string;
+  /** Spec §10 Battery.icon — fixture glyph until brand kit. */
+  icon: string;
   displayOrder: number;
   bookChapterRef: string | null;
 };

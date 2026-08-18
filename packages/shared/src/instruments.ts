@@ -48,6 +48,7 @@ export type AssessmentItem = {
   scoringDirection: ScoringDirection | null;
   version: number;
   active: boolean;
+  workflowStatus?: import("./workflow").WorkflowStatus;
   /** True for placeholder wording until Joel's content package lands. */
   isFixture: boolean;
 };
@@ -55,9 +56,10 @@ export type AssessmentItem = {
 export type Construct = {
   id: string;
   batteryId: string;
-  dimension: "capacity" | "strain" | "recharge" | "drain" | "mode";
+  dimension: "capacity" | "strain" | "recharge" | "mode";
   subconstruct: string | null;
   definition: string;
   bookChapterRef: string | null;
+  workflowStatus?: import("./workflow").WorkflowStatus;
   isFixture: boolean;
 };

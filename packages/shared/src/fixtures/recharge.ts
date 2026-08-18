@@ -1,68 +1,77 @@
-import type { RechargeAction } from "../recharge";
+import { BATTERY_IDS, type BatteryId } from "../batteries";
+import type { DrivingMode } from "../driving-mode";
+import type { RechargeAction, RechargeDurationTier } from "../recharge";
 import type { ScoringThreshold } from "../scoring";
+import type { RecommendationLookup } from "../recommendations";
+import { DRIVING_MODE_BEHAVIOR } from "../driving-mode";
+import { RECHARGE_DURATION_MINUTES } from "../recharge";
 
-/**
- * FIXTURE recharge library stubs — not Joel-authored.
- * Plan B is full success; never frame as lesser.
- */
-export const FIXTURE_RECHARGE_ACTIONS: RechargeAction[] = [
-  {
-    id: "fixture_recharge_physical_2min",
-    batteryId: "physical",
-    signalId: null,
-    durationTier: "2min",
-    modeSuitability: ["green", "yellow", "red"],
-    instructions:
-      "[FIXTURE] Step away from the screen and take two slow breaths while standing or sitting comfortably.",
-    planAText:
-      "[FIXTURE] Plan A: Drink water, stretch your shoulders, and step outside for two minutes if you can.",
-    planBText:
-      "[FIXTURE] Plan B: Sit or stand still for four slow breaths. That counts as complete.",
-    accessibilityVariations:
-      "[FIXTURE] Seated option available; no equipment required.",
-    healthCaution: null,
-    chapterSource: null,
-    isFixture: true,
-  },
-  {
-    id: "fixture_recharge_daily_rhythms_5min",
-    batteryId: "daily_rhythms",
-    signalId: null,
-    durationTier: "5min",
-    modeSuitability: ["green", "yellow"],
-    instructions:
-      "[FIXTURE] Choose one transition cue for the next block of your day and write it down.",
-    planAText:
-      "[FIXTURE] Plan A: Set a five-minute start/stop boundary for your next task.",
-    planBText:
-      "[FIXTURE] Plan B: Name the next single step out loud. Done.",
-    accessibilityVariations: null,
-    healthCaution: null,
-    chapterSource: null,
-    isFixture: true,
-  },
-  {
-    id: "fixture_recharge_mental_60s",
-    batteryId: "mental",
-    signalId: null,
-    durationTier: "60s",
-    modeSuitability: ["green", "yellow", "red"],
-    instructions:
-      "[FIXTURE] Close extra tabs or mute one notification channel for one minute.",
-    planAText:
-      "[FIXTURE] Plan A: Clear one small decision by writing the choice on paper.",
-    planBText:
-      "[FIXTURE] Plan B: Pause for 60 seconds without adding a new task.",
-    accessibilityVariations: null,
-    healthCaution: null,
-    chapterSource: null,
-    isFixture: true,
-  },
-];
+const TIERS: RechargeDurationTier[] = ["60s", "2min", "5min", "10min"];
+const MODES: DrivingMode[] = ["green", "yellow", "red"];
+
+function planBFor(batteryId: BatteryId, tier: RechargeDurationTier): string {
+  return `[FIXTURE] Plan B (${tier}, ${batteryId.replaceAll("_", " ")}): four slow breaths or one tiny next step. That counts as complete.`;
+}
+
+function planAFor(batteryId: BatteryId, tier: RechargeDurationTier): string {
+  return `[FIXTURE] Plan A (${tier}, ${batteryId.replaceAll("_", " ")}): a concrete recharge matched to this battery. Leave the app when done.`;
+}
+
+export const FIXTURE_RECHARGE_ACTIONS: RechargeAction[] = BATTERY_IDS.flatMap(
+  (batteryId) =>
+    TIERS.map((tier) => ({
+      id: `fixture_recharge_${batteryId}_${tier}`,
+      batteryId,
+      signalId: `fixture_signal_${batteryId}_body`,
+      durationTier: tier,
+      modeSuitability: MODES.filter((mode) => RECHARGE_DURATION_MINUTES[tier] <= DRIVING_MODE_BEHAVIOR[mode].durationCeilingMinutes),
+      instructions: `[FIXTURE] ${tier} recharge for ${batteryId.replaceAll("_", " ")}.`,
+      planAText: planAFor(batteryId, tier),
+      planBText: planBFor(batteryId, tier),
+      accessibilityVariations:
+        "[FIXTURE] Seated option; no equipment required.",
+      healthCaution:
+        batteryId === "physical"
+          ? "[FIXTURE] Skip movement if it would aggravate a current injury."
+          : null,
+      chapterSource: null,
+      workflowStatus: "published",
+      isFixture: true,
+    })),
+);
+
+export const FIXTURE_RECOMMENDATION_LOOKUPS: RecommendationLookup[] = (() => {
+  const rows: RecommendationLookup[] = [];
+  let order = 0;
+  for (const batteryId of BATTERY_IDS) {
+    for (const mode of MODES) {
+      const allowed = TIERS.filter(
+        (tier) =>
+          RECHARGE_DURATION_MINUTES[tier] <=
+          DRIVING_MODE_BEHAVIOR[mode].durationCeilingMinutes,
+      );
+      const preferred = allowed[allowed.length - 1] ?? "60s";
+      order += 10;
+      rows.push({
+        id: `fixture_lookup_${batteryId}_${mode}_${preferred}`,
+        batteryId,
+        signalId: `fixture_signal_${batteryId}_body`,
+        mode,
+        durationTier: preferred,
+        timeOfDay: "any",
+        rechargeActionId: `fixture_recharge_${batteryId}_${preferred}`,
+        sortOrder: order,
+        workflowStatus: "published",
+        isFixture: true,
+      });
+    }
+  }
+  return rows;
+})();
 
 /**
  * FIXTURE provisional thresholds from spec §4.3.
- * Must move to admin-editable ScoringThreshold rows before real scoring ships.
+ * Admin-editable ScoringThreshold rows — never hard-code in scorers.
  */
 export const FIXTURE_SCORING_THRESHOLDS: ScoringThreshold[] = [
   {

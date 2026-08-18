@@ -24,6 +24,7 @@ export type RechargeAction = {
   accessibilityVariations: string | null;
   healthCaution: string | null;
   chapterSource: string | null;
+  workflowStatus?: import("./workflow").WorkflowStatus;
   isFixture: boolean;
 };
 

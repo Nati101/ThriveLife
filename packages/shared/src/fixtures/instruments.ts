@@ -68,11 +68,11 @@ export const FIXTURE_RESPONSE_SCALES: ResponseScale[] = [
     id: "scale_frequency_0_4",
     name: "Frequency 0–4 + N/A",
     labels: [
-      "0 Never",
+      "0 Not at all",
       "1 Rarely",
       "2 Sometimes",
       "3 Often",
-      "4 Very often",
+      "4 Almost always",
       "N/A",
     ],
     storedType: "integer",

@@ -8,23 +8,14 @@ import type { AssessmentItem, Construct } from "../instruments";
 
 export const FIXTURE_CONSTRUCTS: Construct[] = [
   {
-    id: "construct_drain_signal",
-    batteryId: "cross_cutting",
-    dimension: "drain",
-    subconstruct: null,
-    definition:
-      "[FIXTURE] Cross-battery DRAIN warning-light signals (session intervention only).",
-    bookChapterRef: null,
-    isFixture: true,
-  },
-  {
     id: "construct_driving_mode",
-    batteryId: "cross_cutting",
+    batteryId: "work_daily_purpose",
     dimension: "mode",
     subconstruct: null,
     definition:
       "[FIXTURE] User-declared Driving Mode construct for Weekly Mode Check.",
     bookChapterRef: null,
+    workflowStatus: "published",
     isFixture: true,
   },
   ...BATTERY_IDS.flatMap((batteryId) => [
@@ -35,6 +26,7 @@ export const FIXTURE_CONSTRUCTS: Construct[] = [
       subconstruct: null,
       definition: `[FIXTURE] Capacity construct for ${batteryId}`,
       bookChapterRef: null,
+      workflowStatus: "published" as const,
       isFixture: true,
     },
     {
@@ -42,8 +34,9 @@ export const FIXTURE_CONSTRUCTS: Construct[] = [
       batteryId,
       dimension: "strain" as const,
       subconstruct: null,
-      definition: `[FIXTURE] Strain construct for ${batteryId}`,
+      definition: `[FIXTURE] Strain construct for ${batteryId} — DRAIN Check uses the moment variant of this construct.`,
       bookChapterRef: null,
+      workflowStatus: "published" as const,
       isFixture: true,
     },
     {
@@ -53,36 +46,75 @@ export const FIXTURE_CONSTRUCTS: Construct[] = [
       subconstruct: null,
       definition: `[FIXTURE] Recharge Skill construct for ${batteryId}`,
       bookChapterRef: null,
+      workflowStatus: "published" as const,
       isFixture: true,
     },
   ]),
 ];
 
-const DRAIN_PROMPTS = [
-  "Demands feel higher than what I can currently hold",
-  "I am putting off things that usually feel manageable",
-  "I am reaching for quick relief that does not restore capacity",
-  "My transitions between tasks feel jagged or rushed",
-  "Rest is hard to start or hard to leave",
-  "I feel pulled in more directions than I can track",
-  "Small decisions feel heavier than they should",
-  "I notice irritation rising faster than usual",
-  "My body is signaling I need a pit stop",
-  "I would benefit from a smaller next step right now",
+/**
+ * DRAIN items are Strain constructs at timeframe=moment (spec §3.3).
+ * Same construct_id as Full Assessment Strain items; wording differs by instrument.
+ */
+const DRAIN_STRAIN_VARIANTS: Array<{
+  wording: string;
+  batteryId: (typeof BATTERY_IDS)[number];
+}> = [
+  {
+    wording: "Demands feel higher than what I can currently hold",
+    batteryId: "work_daily_purpose",
+  },
+  {
+    wording: "I am putting off things that usually feel manageable",
+    batteryId: "daily_rhythms",
+  },
+  {
+    wording: "I am reaching for quick relief that does not restore capacity",
+    batteryId: "physical",
+  },
+  {
+    wording: "My transitions between tasks feel jagged or rushed",
+    batteryId: "daily_rhythms",
+  },
+  {
+    wording: "Rest is hard to start or hard to leave",
+    batteryId: "physical",
+  },
+  {
+    wording: "I feel pulled in more directions than I can track",
+    batteryId: "mental",
+  },
+  {
+    wording: "Small decisions feel heavier than they should",
+    batteryId: "mental",
+  },
+  {
+    wording: "I notice irritation rising faster than usual",
+    batteryId: "emotional",
+  },
+  {
+    wording: "Connection feels effortful or thin right now",
+    batteryId: "relational",
+  },
+  {
+    wording: "My inner compass feels hard to hear in this moment",
+    batteryId: "spiritual",
+  },
 ];
 
-export const FIXTURE_DRAIN_ITEMS: AssessmentItem[] = DRAIN_PROMPTS.map(
-  (wording, index) => ({
+export const FIXTURE_DRAIN_ITEMS: AssessmentItem[] = DRAIN_STRAIN_VARIANTS.map(
+  (row, index) => ({
     id: `fixture_drain_${index + 1}`,
-    constructId: "construct_drain_signal",
+    constructId: `construct_${row.batteryId}_strain`,
     instrumentId: "drain_check",
-    batteryId: null,
+    batteryId: row.batteryId,
     timeframe: "moment",
-    wording: `[FIXTURE] ${wording}`,
+    wording: `[FIXTURE] ${row.wording}`,
     responseScaleId: "scale_drain_yes_somewhat_no",
-    scoringDirection: null,
+    scoringDirection: "higher_is_more_strain",
     version: 1,
     active: true,
+    workflowStatus: "published",
     isFixture: true,
   }),
 );

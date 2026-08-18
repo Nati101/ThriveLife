@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/assessment-scoring.test.ts"
+    "test": "tsx --test src/assessment-scoring.test.ts src/phase-engine.test.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
