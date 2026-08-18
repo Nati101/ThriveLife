@@ -20,6 +20,8 @@ import {
   resetContentStore,
   updateCollectionItem,
 } from "@/lib/content-api";
+import { Button } from "@/components/ui/button";
+import { fieldClassName } from "@/components/ui/field";
 
 type TabId = "overview" | "constructs" | "items" | "recharge" | "scales";
 
@@ -391,20 +393,16 @@ export function AdminContentPage() {
                     Definition
                   </span>
                   <textarea
-                    className="min-h-24 w-full rounded-lg border border-input px-3 py-2"
+                    className={`${fieldClassName} min-h-24`}
                     value={constructDraft}
                     disabled={!canDraft}
                     onChange={(e) => setConstructDraft(e.target.value)}
                   />
                 </label>
                 {canDraft ? (
-                  <button
-                    type="button"
-                    onClick={() => void saveConstructDefinition()}
-                    className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-                  >
+                  <Button onClick={() => void saveConstructDefinition()}>
                     Save definition
-                  </button>
+                  </Button>
                 ) : null}
                 <div>
                   <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -466,7 +464,7 @@ export function AdminContentPage() {
                     </p>
                     {editingItemId === item.id ? (
                       <textarea
-                        className="mt-2 min-h-20 w-full min-w-[280px] rounded-lg border border-input px-3 py-2 text-sm"
+                        className={`${fieldClassName} mt-2 min-h-20 min-w-[280px]`}
                         value={itemDraft}
                         onChange={(e) => setItemDraft(e.target.value)}
                       />
@@ -562,7 +560,7 @@ export function AdminContentPage() {
                           {label}
                         </span>
                         <textarea
-                          className="min-h-16 w-full rounded-lg border border-input px-3 py-2"
+                          className={`${fieldClassName} min-h-16`}
                           value={rechargeDraft[key]}
                           onChange={(e) =>
                             setRechargeDraft((prev) => ({

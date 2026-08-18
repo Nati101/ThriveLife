@@ -45,7 +45,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted-foreground);
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -69,10 +69,14 @@
   border-color: var(--border);
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: color-mix(in srgb, #f9fafb 50%, transparent);
+  overflow-x: hidden;
   background-color: #f9fafb;
   color: var(--foreground);
   font-family: var(--font-sans);

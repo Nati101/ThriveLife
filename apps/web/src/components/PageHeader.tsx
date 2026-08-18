@@ -1,28 +1,43 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import { buttonClassName } from "@/components/ui/button-styles";
 
 export function PageHeader({
   title,
   description,
   eyebrow,
+  action,
+  level = 1,
 }: {
   title: string;
   description?: string;
   eyebrow?: string;
+  action?: ReactNode;
+  level?: 1 | 2;
 }) {
+  const Heading = level === 1 ? "h1" : "h2";
   return (
-    <header className="mb-8 max-w-2xl">
-      {eyebrow ? (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-          {eyebrow}
-        </p>
-      ) : null}
-      <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
-      {description ? (
-        <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
+    <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="max-w-2xl">
+        {eyebrow ? (
+          <p className="mb-1 text-sm font-medium text-primary">{eyebrow}</p>
+        ) : null}
+        <Heading
+          className={
+            level === 1
+              ? "text-3xl font-bold text-gray-800"
+              : "text-xl font-semibold text-gray-700"
+          }
+        >
+          {title}
+        </Heading>
+        {description ? (
+          <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {action}
     </header>
   );
 }
@@ -45,10 +60,7 @@ export function PlaceholderPanel({
         {children}
       </div>
       {href && linkLabel ? (
-        <Link
-          to={href}
-          className="mt-4 inline-flex rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-        >
+        <Link to={href} className={`${buttonClassName({ size: "sm" })} mt-4`}>
           {linkLabel}
         </Link>
       ) : null}

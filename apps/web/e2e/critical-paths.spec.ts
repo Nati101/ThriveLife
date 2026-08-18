@@ -24,7 +24,9 @@ test("start Full Assessment, complete via API, see dashboard rings", async ({
   await page.goto("/assessments/full-assessment");
   await expect(page.getByText("Full Assessment").first()).toBeVisible();
 
+  const start = page.getByRole("button", { name: /start|resume/i }).first();
   const locked = page.getByText("Full Assessment not available yet");
+  await expect(start.or(locked)).toBeVisible();
   if (await locked.isVisible()) {
     await page.goto("/dashboard");
     await expect(
@@ -34,7 +36,6 @@ test("start Full Assessment, complete via API, see dashboard rings", async ({
     return;
   }
 
-  const start = page.getByRole("button", { name: /start|resume/i }).first();
   await expect(start).toBeVisible();
   await start.click();
   await expect(page.getByRole("button", { name: "Complete" })).toBeVisible();

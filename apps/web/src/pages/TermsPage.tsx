@@ -10,7 +10,7 @@ export function TermsPage() {
         title="Terms of use"
         description="Placeholder copy pending Joel and legal counsel. Not a contract."
       />
-      <div className="rounded-lg border border-amber-700/40 bg-warn-soft px-4 py-3 text-sm text-fixture">
+      <div className="rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-fixture">
         DRAFT — required in-app surface only. Do not present this as binding
         terms until legal has signed off.
       </div>

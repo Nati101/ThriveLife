@@ -10,7 +10,7 @@ export function PrivacyPolicyPage() {
         title="Privacy policy"
         description="Placeholder copy pending Joel and legal counsel. Not a PIPA/PIPEDA sign-off."
       />
-      <div className="rounded-lg border border-amber-700/40 bg-warn-soft px-4 py-3 text-sm text-fixture">
+      <div className="rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-fixture">
         DRAFT — this page exists so the in-app surface required by the spec is
         present. It is not reviewed legal advice and must not be treated as a
         finished privacy policy.

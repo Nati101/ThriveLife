@@ -17,7 +17,7 @@ import {
   roleLabel,
   userCanAccessContentTools,
 } from "@/lib/auth";
-import { FixtureBanner } from "@/components/FixtureBanner";
+import { FixtureNote } from "@/components/FixtureBanner";
 
 const LOGO_URL =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dd5a726e4_ChatGPTImageAug18202508_03_05PM.png";
@@ -58,7 +58,6 @@ export function AppShell() {
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
-      <FixtureBanner />
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden flex-col border-r border-border bg-white shadow-sm md:flex md:w-64">
           <div className="flex h-20 items-center border-b border-border px-6">
@@ -73,11 +72,12 @@ export function AppShell() {
                 <p className="text-xs text-muted-foreground">
                   Wellness Platform
                 </p>
+                <FixtureNote />
               </div>
             </Link>
           </div>
 
-          <nav className="flex-1 px-4 py-6">
+          <nav className="flex-1 px-4 py-6" aria-label="Main">
             <ul className="space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -90,7 +90,7 @@ export function AppShell() {
                   <li key={item.href}>
                     <Link
                       to={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all ${
+                      className={`flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all ${
                         active
                           ? "bg-primary/10 text-primary shadow-sm"
                           : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
@@ -121,21 +121,21 @@ export function AppShell() {
             </div>
             <Link
               to="/auth"
-              className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+              className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
             >
-              Sign in (Supabase)
+              Sign in
             </Link>
             {import.meta.env.DEV ? (
               <Link
                 to="/dev/role"
-                className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+                className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
               >
-                Switch local role (dev)
+                Switch local role
               </Link>
             ) : (
               <Link
                 to="/privacy"
-                className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+                className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
               >
                 Privacy controls
               </Link>
@@ -143,9 +143,9 @@ export function AppShell() {
           </div>
         </aside>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex min-h-11 items-center gap-2">
               <img
                 src={LOGO_URL}
                 alt="ThriveLife Logo"
@@ -156,7 +156,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-gray-100"
+              className="min-h-11 min-w-11 rounded-lg p-2 text-muted-foreground hover:bg-gray-100"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -167,15 +167,26 @@ export function AppShell() {
             <>
               <button
                 type="button"
-                className="fixed inset-0 z-30 bg-black/50 md:hidden"
+                className="fixed inset-0 z-40 bg-black/50 md:hidden"
                 aria-label="Close menu overlay"
                 onClick={() => setMobileMenuOpen(false)}
               />
-              <div className="fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col bg-white shadow-xl md:hidden">
-                <div className="border-b p-4">
-                  <span className="font-bold text-gray-800">ThriveLife</span>
+              <div className="fixed bottom-0 left-0 top-0 z-50 flex w-64 max-w-[85vw] flex-col bg-white shadow-xl md:hidden">
+                <div className="flex items-center justify-between border-b px-4 py-4">
+                  <div>
+                    <p className="font-bold text-gray-800">ThriveLife</p>
+                    <FixtureNote />
+                  </div>
+                  <button
+                    type="button"
+                    className="min-h-11 min-w-11 rounded-lg p-2 text-muted-foreground hover:bg-gray-100"
+                    aria-label="Close menu"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <X size={22} />
+                  </button>
                 </div>
-                <nav className="flex-1 p-4">
+                <nav className="flex-1 overflow-y-auto p-4" aria-label="Mobile">
                   <ul className="space-y-2">
                     {navItems.map((item) => {
                       const Icon = item.icon;
@@ -188,7 +199,7 @@ export function AppShell() {
                         <li key={item.href}>
                           <Link
                             to={item.href}
-                            className={`flex items-center gap-3 rounded-md px-3 py-2 ${
+                            className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium ${
                               active
                                 ? "bg-primary/10 text-primary"
                                 : "text-muted-foreground hover:bg-gray-100"
@@ -204,7 +215,7 @@ export function AppShell() {
                       <li>
                         <Link
                           to="/dev/role"
-                          className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-gray-100"
+                          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
                         >
                           <UserRound size={20} />
                           <span>Switch role</span>
@@ -214,7 +225,7 @@ export function AppShell() {
                       <li>
                         <Link
                           to="/privacy"
-                          className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:bg-gray-100"
+                          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
                         >
                           <UserRound size={20} />
                           <span>Privacy</span>
@@ -223,12 +234,27 @@ export function AppShell() {
                     )}
                   </ul>
                 </nav>
+                <div className="border-t p-4">
+                  <div className="flex items-center gap-3 rounded-lg bg-gray-100 p-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <UserRound size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {user.displayName}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {roleLabel(user.role)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           ) : null}
 
-          <main id="main" className="relative flex-1 overflow-auto">
-            <div className="mx-auto max-w-7xl p-4 pb-24 md:p-8">
+          <main id="main" className="relative min-w-0 flex-1 overflow-auto">
+            <div className="mx-auto max-w-7xl p-4 pb-16 md:p-8">
               <Outlet />
             </div>
             <footer className="mx-auto max-w-7xl px-4 pb-10 text-sm text-muted-foreground md:px-8">
@@ -239,7 +265,7 @@ export function AppShell() {
                   to="/support"
                   className="font-medium text-primary underline-offset-2 hover:underline"
                 >
-                  Always-available support
+                  Support
                 </Link>
                 {" · "}
                 <Link
@@ -262,7 +288,6 @@ export function AppShell() {
                 >
                   Terms (draft)
                 </Link>
-                .
               </p>
             </footer>
           </main>

@@ -1,6 +1,9 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { DRIVING_MODE_BEHAVIOR, FIXTURE_BATTERIES } from "@thrivelife/shared";
 import { PageHeader } from "@/components/PageHeader";
+import { BatteryIcon } from "@/components/BatteryVisual";
+import { buttonClassName } from "@/components/ui/button-styles";
+import { Card } from "@/components/ui/card";
 
 export function HomePage() {
   const [params] = useSearchParams();
@@ -29,15 +32,12 @@ export function HomePage() {
             a capacity-navigation tool, not a habit tracker or clinical product.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/dashboard"
-              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
-            >
+            <Link to="/dashboard" className={buttonClassName()}>
               Open dashboard
             </Link>
             <Link
               to="/onboarding"
-              className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-gray-100"
+              className={buttonClassName({ variant: "outline" })}
             >
               Start onboarding
             </Link>
@@ -47,20 +47,23 @@ export function HomePage() {
 
       <section>
         <PageHeader
+          level={2}
           eyebrow="Domain"
           title="Seven Life Batteries"
           description="Each battery is read on Capacity, Strain, and Recharge Skill — never averaged into one score."
         />
         <ul className="grid gap-3 sm:grid-cols-2">
           {FIXTURE_BATTERIES.map((battery) => (
-            <li
-              key={battery.id}
-              className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
-            >
-              <p className="font-semibold text-gray-800">{battery.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {battery.thinkOfItAs}
-              </p>
+            <li key={battery.id}>
+              <Card className="flex items-start gap-3">
+                <BatteryIcon name={battery.icon} />
+                <div>
+                  <p className="font-semibold text-gray-800">{battery.name}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {battery.thinkOfItAs}
+                  </p>
+                </div>
+              </Card>
             </li>
           ))}
         </ul>
@@ -68,23 +71,23 @@ export function HomePage() {
 
       <section>
         <PageHeader
+          level={2}
           eyebrow="Driving Modes"
           title="Green, Yellow, Red"
           description="User-declared modes set recommendation ceilings. Suggested mode is advisory only."
         />
         <ul className="grid gap-3 sm:grid-cols-3">
           {modes.map((mode) => (
-            <li
-              key={mode.mode}
-              className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
-            >
-              <p className="font-semibold capitalize text-gray-800">
-                {mode.mode}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{mode.meaning}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Ceiling: {mode.durationCeilingMinutes} min
-              </p>
+            <li key={mode.mode}>
+              <Card>
+                <p className="font-semibold capitalize text-gray-800">
+                  {mode.mode}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{mode.meaning}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ceiling: {mode.durationCeilingMinutes} min
+                </p>
+              </Card>
             </li>
           ))}
         </ul>

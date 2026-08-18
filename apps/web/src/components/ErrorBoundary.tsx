@@ -34,19 +34,19 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children;
     return (
       <main className="mx-auto max-w-lg p-8 text-foreground">
-        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           The screen failed to render. Your data is still on the server. Reload
           to try again, or open Support if you need help.
         </p>
         {import.meta.env.DEV ? (
-          <pre className="mt-4 overflow-auto rounded-lg border border-border bg-white p-3 text-xs">
+          <pre className="mt-4 overflow-auto rounded-xl border border-border bg-white p-3 text-xs shadow-sm">
             {this.state.error.message}
           </pre>
         ) : null}
         <button
           type="button"
-          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
           onClick={() => this.setState({ error: null })}
         >
           Try again

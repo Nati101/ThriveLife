@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
 import { deleteMyData, exportMyData, fetchPrivacy, savePrivacy } from "@/lib/member-api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/states";
+import { cn } from "@/components/ui/cn";
 
 export function PrivacyPage() {
   const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
@@ -40,41 +44,49 @@ export function PrivacyPage() {
         description="Assessment answers, scores, mode, journal, completion, and tune-ups stay private unless you share them."
       />
       {settings ? (
-        <ul className="space-y-3 rounded-xl border border-border bg-white p-5 text-sm">
-          {(
-            [
-              ["notificationsEnabled", "Optional reminders"],
-              ["aiFeaturesEnabled", "AI features (none in V1 — control reserved)"],
-              ["anonymousAnalytics", "Anonymous usage analytics"],
-              ["futureTeamShare", "Future team share (stub)"],
-            ] as const
-          ).map(([key, label]) => (
-            <li key={key} className="flex items-center justify-between gap-3">
-              <span>{label}</span>
-              <button
-                type="button"
-                className="rounded-lg border border-border px-3 py-1 text-xs"
-                onClick={() => void toggle(key)}
-                aria-pressed={Boolean(settings[key])}
-                aria-label={`${label}: ${settings[key] ? "on" : "off"}`}
-              >
-                {settings[key] ? "On" : "Off"}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+        <Card>
+          <ul className="space-y-4 text-sm">
+            {(
+              [
+                ["notificationsEnabled", "Optional reminders"],
+                ["aiFeaturesEnabled", "AI features (none in V1 — control reserved)"],
+                ["anonymousAnalytics", "Anonymous usage analytics"],
+                ["futureTeamShare", "Future team share (stub)"],
+              ] as const
+            ).map(([key, label]) => {
+              const on = Boolean(settings[key]);
+              return (
+                <li key={key} className="flex items-center justify-between gap-3">
+                  <span className="text-gray-800">{label}</span>
+                  <button
+                    type="button"
+                    className={cn(
+                      "relative h-7 w-12 shrink-0 rounded-full transition",
+                      on ? "bg-primary" : "bg-gray-200",
+                    )}
+                    onClick={() => void toggle(key)}
+                    aria-pressed={on}
+                    aria-label={`${label}: ${on ? "on" : "off"}`}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition",
+                        on ? "left-5" : "left-0.5",
+                      )}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : (
+        <LoadingState label="Loading privacy controls…" />
+      )}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          onClick={() => void onExport()}
-        >
-          Export my data
-        </button>
-        <button
-          type="button"
-          className="rounded-lg border border-border px-4 py-2 text-sm"
+        <Button onClick={() => void onExport()}>Export my data</Button>
+        <Button
+          variant="outline"
           onClick={() => {
             if (confirm("Delete all local ThriveLife data for this stub user?")) {
               void deleteMyData().then(() => setMessage("Deleted."));
@@ -82,9 +94,9 @@ export function PrivacyPage() {
           }}
         >
           Delete my data
-        </button>
+        </Button>
       </div>
-      {message ? <p className="text-sm">{message}</p> : null}
+      {message ? <p className="text-sm text-foreground">{message}</p> : null}
       <p className="text-xs text-muted-foreground">
         Read the{" "}
         <Link

@@ -7,6 +7,8 @@ import {
   fetchContentDocument,
   updateCollectionItem,
 } from "@/lib/content-api";
+import { Button } from "@/components/ui/button";
+import { fieldClassName } from "@/components/ui/field";
 
 type ThresholdDraft = {
   levelName: string;
@@ -155,7 +157,7 @@ export function AdminThresholdsPage() {
                   <td className="px-4 py-3">
                     {canEdit ? (
                       <input
-                        className="w-28 rounded border border-input px-2 py-1"
+                        className={`${fieldClassName} w-28`}
                         value={draft.levelName}
                         onChange={(e) =>
                           setDrafts((prev) => ({
@@ -171,7 +173,7 @@ export function AdminThresholdsPage() {
                   <td className="px-4 py-3">
                     {canEdit ? (
                       <input
-                        className="w-20 rounded border border-input px-2 py-1"
+                        className={`${fieldClassName} w-20`}
                         value={draft.minValue}
                         placeholder="—"
                         onChange={(e) =>
@@ -188,7 +190,7 @@ export function AdminThresholdsPage() {
                   <td className="px-4 py-3">
                     {canEdit ? (
                       <input
-                        className="w-20 rounded border border-input px-2 py-1"
+                        className={`${fieldClassName} w-20`}
                         value={draft.maxValue}
                         placeholder="—"
                         onChange={(e) =>
@@ -205,7 +207,7 @@ export function AdminThresholdsPage() {
                   <td className="px-4 py-3">
                     {canEdit ? (
                       <textarea
-                        className="min-h-16 w-full min-w-[180px] rounded border border-input px-2 py-1"
+                        className={`${fieldClassName} min-h-16 min-w-[180px]`}
                         value={draft.description}
                         onChange={(e) =>
                           setDrafts((prev) => ({
@@ -225,14 +227,13 @@ export function AdminThresholdsPage() {
                   </td>
                   {canEdit ? (
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                      <Button
+                        size="sm"
                         onClick={() => void saveRow(row.id)}
                         disabled={busy}
                       >
                         Save
-                      </button>
+                      </Button>
                     </td>
                   ) : null}
                 </tr>

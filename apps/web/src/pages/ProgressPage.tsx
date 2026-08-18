@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
 import { fetchDashboard } from "@/lib/member-api";
+import { Card, CardTitle } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/states";
 
 export function ProgressPage() {
   const [charts, setCharts] = useState<{
@@ -15,6 +17,19 @@ export function ProgressPage() {
     });
   }, []);
 
+  if (!charts) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Progress"
+          title="Two charts, never one axis"
+          description="Full Assessment snapshots stay discrete. Daily Check-In is a separate continuous series."
+        />
+        <LoadingState label="Loading progress…" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -22,39 +37,41 @@ export function ProgressPage() {
         title="Two charts, never one axis"
         description="Full Assessment snapshots stay discrete. Daily Check-In is a separate continuous series. No numeric deltas until SEM is validated."
       />
-      <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="text-lg font-semibold text-gray-800">
-          Chart A — Full Assessment snapshots
-        </h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {(charts?.assessmentSnapshots ?? []).length === 0 ? (
-            <li className="text-muted-foreground">No snapshots yet.</li>
-          ) : (
-            charts?.assessmentSnapshots.map((row) => (
-              <li key={`${row.completedAt}-${row.version}`}>
+      <Card>
+        <CardTitle>Chart A — Full Assessment snapshots</CardTitle>
+        {(charts.assessmentSnapshots ?? []).length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">No snapshots yet.</p>
+        ) : (
+          <ul className="mt-3 space-y-2 text-sm">
+            {charts.assessmentSnapshots.map((row) => (
+              <li
+                key={`${row.completedAt}-${row.version}`}
+                className="rounded-lg border border-border bg-gray-50 px-3 py-2"
+              >
                 {row.completedAt?.slice(0, 10)} · version {row.version} · state
                 labels only
               </li>
-            ))
-          )}
-        </ul>
-      </section>
-      <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="text-lg font-semibold text-gray-800">
-          Chart B — Daily Check-In
-        </h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {(charts?.checkInSeries ?? []).length === 0 ? (
-            <li className="text-muted-foreground">No check-ins yet.</li>
-          ) : (
-            charts?.checkInSeries.map((row) => (
-              <li key={row.date}>
-                {row.date} · {row.completion}
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card>
+        <CardTitle>Chart B — Daily Check-In</CardTitle>
+        {(charts.checkInSeries ?? []).length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">No check-ins yet.</p>
+        ) : (
+          <ul className="mt-3 space-y-2 text-sm">
+            {charts.checkInSeries.map((row) => (
+              <li
+                key={row.date}
+                className="rounded-lg border border-border bg-gray-50 px-3 py-2"
+              >
+                {row.date} · {row.completion.replaceAll("_", " ")}
               </li>
-            ))
-          )}
-        </ul>
-      </section>
+            ))}
+          </ul>
+        )}
+      </Card>
       <SupportFooter />
     </div>
   );

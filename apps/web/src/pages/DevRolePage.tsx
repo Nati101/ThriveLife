@@ -38,7 +38,7 @@ export function DevRolePage() {
             key={role}
             type="button"
             onClick={() => chooseRole(role)}
-            className={`rounded-xl border px-4 py-3 text-left transition ${
+            className={`min-h-11 rounded-xl border px-4 py-3 text-left transition ${
               user.role === role
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border bg-white hover:bg-gray-100"

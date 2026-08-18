@@ -7,6 +7,7 @@ import type {
   ResponseScale,
   ScoringThreshold,
   ThresholdAuditEntry,
+  WorkflowAction,
 } from "@thrivelife/shared";
 import { apiFetch } from "@/lib/api-fetch";
 
@@ -53,6 +54,20 @@ export function deleteCollectionItem(collection: string, id: string) {
   return apiFetch<{ ok: boolean; softDeleted?: boolean; message?: string }>(
     `/api/content/${collection}/${encodeURIComponent(id)}`,
     { method: "DELETE" },
+  );
+}
+
+export function postContentWorkflow(
+  collection: string,
+  id: string,
+  action: WorkflowAction,
+) {
+  return apiFetch<{ item: unknown }>(
+    `/api/content/${collection}/${encodeURIComponent(id)}/workflow`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    },
   );
 }
 

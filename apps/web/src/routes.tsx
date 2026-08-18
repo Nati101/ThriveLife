@@ -69,11 +69,14 @@ export const appRoutes = [
       {
         path: "*",
         element: (
-          <div>
-            <p className="text-muted-foreground">Page not found.</p>
+          <div className="max-w-md space-y-3">
+            <h1 className="text-3xl font-bold text-gray-800">Page not found</h1>
+            <p className="text-muted-foreground">
+              That route is not part of ThriveLife.
+            </p>
             <Link
               to="/"
-              className="font-medium text-primary underline-offset-2 hover:underline"
+              className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline"
             >
               Home
             </Link>

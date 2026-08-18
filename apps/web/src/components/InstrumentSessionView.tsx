@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  BATTERY_STATE_LABELS,
   DRIVING_MODE_LABELS,
   type AssessmentItem,
   type AssessmentResponse,
@@ -20,6 +19,21 @@ import {
   type InstrumentBootstrap,
 } from "@/lib/assessment-api";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { buttonClassName } from "@/components/ui/button-styles";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { ProgressBar } from "@/components/ui/progress";
+import { ErrorState, LoadingState } from "@/components/ui/states";
+import {
+  BatteryIcon,
+  BatteryStateBadge,
+  ScanMarkerBadge,
+} from "@/components/BatteryVisual";
+
+function bandLabel(status: string, band?: string): string {
+  if (status !== "ok" || !band) return "Not enough answers";
+  return band.replaceAll("_", " ");
+}
 
 type AnswerValue = number | string | null;
 
@@ -36,7 +50,6 @@ function scaleOptions(scale: ResponseScale | undefined): Array<{
       const label = scale.labels[n] ?? String(n);
       options.push({ value: n, label, isMissing: false });
     }
-    // Trailing N/A label if present beyond max
     if (scale.labels.length > scale.maxValue - scale.minValue + 1) {
       const naLabel = scale.labels[scale.labels.length - 1] ?? "N/A";
       options.push({ value: null, label: naLabel, isMissing: true });
@@ -120,6 +133,8 @@ export function InstrumentSessionView({
   const currentItem = items[index] ?? null;
   const locked =
     instrumentId === "full_assessment" && bootstrap?.eligibility?.locked === true;
+  const lastItem = index >= items.length - 1 && items.length > 0;
+  const progressPct = items.length ? ((index + 1) / items.length) * 100 : 0;
 
   async function begin(forceNew = false) {
     try {
@@ -163,7 +178,6 @@ export function InstrumentSessionView({
   }
 
   async function chooseAnswer(item: AssessmentItem, answer: AnswerValue) {
-    // Battery Scan Unsure → follow-up
     if (
       instrumentId === "battery_scan" &&
       answer === null &&
@@ -214,7 +228,7 @@ export function InstrumentSessionView({
     return (
       <div>
         <PageHeader eyebrow={eyebrow} title={title} description={description} />
-        <p className="text-sm text-muted-foreground">Loading instrument from store…</p>
+        <LoadingState label="Loading instrument…" />
       </div>
     );
   }
@@ -223,7 +237,7 @@ export function InstrumentSessionView({
     return (
       <div>
         <PageHeader eyebrow={eyebrow} title={title} description={description} />
-        <p className="text-sm text-red-700">{error}</p>
+        <ErrorState message={error} />
       </div>
     );
   }
@@ -259,96 +273,91 @@ export function InstrumentSessionView({
     <div>
       <PageHeader eyebrow={eyebrow} title={title} description={description} />
       {bootstrap?.instrument ? (
-        <p className="mb-4 text-sm text-muted-foreground">
-          {bootstrap.instrument.completionSecondsHint} ·{" "}
-          {items.length} active items from content store · authority:{" "}
-          {bootstrap.instrument.dashboardAuthority}
+        <p className="mb-6 text-sm text-muted-foreground">
+          {bootstrap.instrument.completionSecondsHint} · {items.length} questions
         </p>
       ) : null}
 
       {locked ? (
-        <div className="rounded-xl border border-amber-200 bg-warn-soft p-4 text-sm text-fixture">
-          <p className="font-medium">Full Assessment not available yet</p>
-          <p className="mt-2">{bootstrap?.eligibility?.message}</p>
+        <Card className="border-amber-200 bg-warn-soft text-fixture">
+          <p className="font-semibold">Full Assessment not available yet</p>
+          <p className="mt-2 text-sm">{bootstrap?.eligibility?.message}</p>
           <Link
             to="/check-in"
-            className="mt-3 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
+            className={`${buttonClassName({ size: "sm" })} mt-4`}
           >
             Go to daily check-in
           </Link>
-        </div>
+        </Card>
       ) : null}
 
       {error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}
 
       {!session && !locked ? (
-        <div className="space-y-3">
+        <Card className="max-w-xl space-y-4">
           {instrumentId === "full_assessment" ? (
-            <p className="text-sm text-muted-foreground">
-              Instructions: think about the <strong>past two weeks</strong>. Answer
-              with the number + word label. Use N/A when an item does not apply —
-              N/A is stored as missing, never as a middle score.
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Think about the <strong className="font-semibold text-gray-800">past two weeks</strong>.
+              Use N/A when an item does not apply — it is stored as missing, never as
+              a middle score.
             </p>
           ) : null}
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void begin(false)}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-          >
-            {bootstrap?.inProgressSessionId ? "Resume session" : "Start"}
-          </button>
-          {bootstrap?.inProgressSessionId ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void begin(true)}
-              className="ml-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-gray-50"
-            >
-              Start fresh
-            </button>
-          ) : null}
-        </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={saving} onClick={() => void begin(false)}>
+              {bootstrap?.inProgressSessionId ? "Resume session" : "Start"}
+            </Button>
+            {bootstrap?.inProgressSessionId ? (
+              <Button
+                variant="outline"
+                disabled={saving}
+                onClick={() => void begin(true)}
+              >
+                Start fresh
+              </Button>
+            ) : null}
+          </div>
+        </Card>
       ) : null}
 
       {session && currentItem ? (
-        <div className="mt-6 max-w-2xl space-y-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              Item {index + 1} of {items.length}
-            </span>
-            <span>Session {session.id.slice(-8)}</span>
-          </div>
-          <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-            {currentItem.isFixture ? (
-              <p className="text-xs text-fixture">Fixture item — not clinical wording</p>
-            ) : null}
+        <div className="mt-2 max-w-2xl space-y-4">
+          <ProgressBar
+            value={progressPct}
+            label={`Question ${index + 1} of ${items.length}`}
+          />
+          <Card className="p-6">
             {currentItem.batteryId ? (
-              <p className="mt-1 text-xs font-medium text-muted-foreground">
+              <p className="flex items-center gap-2 text-sm font-medium text-primary">
+                <BatteryIcon
+                  name={batteryById.get(currentItem.batteryId)?.icon}
+                  className="h-4 w-4"
+                />
                 {batteryById.get(currentItem.batteryId)?.name ?? currentItem.batteryId}
               </p>
             ) : null}
-            <p className="mt-2 text-base text-foreground">{currentItem.wording}</p>
+            <p className="mt-3 text-lg leading-relaxed text-gray-800">
+              {currentItem.wording}
+            </p>
 
             {followUps[currentItem.id] ? (
-              <div className="mt-4 space-y-2">
+              <div className="mt-6 space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Would you say it&apos;s closer to Low or Steady?
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {(["low", "steady"] as const).map((level) => (
-                    <button
+                    <Button
                       key={level}
-                      type="button"
+                      variant="outline"
                       disabled={saving}
                       onClick={() => void chooseFollowUp(currentItem, level)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm capitalize hover:bg-gray-50"
+                      className="capitalize"
                     >
                       {level}
-                    </button>
+                    </Button>
                   ))}
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     disabled={saving}
                     onClick={() => {
                       void persistAnswer(currentItem.id, null, true);
@@ -359,14 +368,13 @@ export function InstrumentSessionView({
                       });
                       if (index < items.length - 1) setIndex((i) => i + 1);
                     }}
-                    className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground"
                   >
-                    Skip (missing)
-                  </button>
+                    Skip
+                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-6 flex flex-wrap gap-2">
                 {scaleOptions(scaleById.get(currentItem.responseScaleId)).map(
                   (opt) => {
                     const selected = answerKey(responses, currentItem.id);
@@ -378,10 +386,10 @@ export function InstrumentSessionView({
                         type="button"
                         disabled={saving}
                         onClick={() => void chooseAnswer(currentItem, opt.value)}
-                        className={`rounded-lg border px-3 py-2 text-sm transition ${
+                        className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
                           highlighted
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:bg-gray-50"
+                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                            : "border-border bg-white hover:bg-gray-100"
                         }`}
                       >
                         {opt.label}
@@ -394,35 +402,33 @@ export function InstrumentSessionView({
                     type="button"
                     disabled={saving}
                     onClick={() => void chooseAnswer(currentItem, null)}
-                    className="rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground"
+                    className="min-h-11 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground"
                   >
                     Skip
                   </button>
                 ) : null}
               </div>
             )}
-          </div>
+          </Card>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
               disabled={index === 0 || saving}
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              className="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-40"
             >
               Back
-            </button>
-            <button
-              type="button"
-              disabled={index >= items.length - 1 || saving}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={lastItem || saving}
               onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-              className="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-40"
             >
               Next
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               disabled={saving}
+              className="ml-auto"
               onClick={() => {
                 if (instrumentId === "weekly_mode_check" && currentItem) {
                   const ans = answerKey(responses, currentItem.id);
@@ -434,10 +440,9 @@ export function InstrumentSessionView({
                   void finish();
                 }
               }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               Complete
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -466,32 +471,28 @@ function ResultsPanel({
       <PageHeader
         eyebrow="Results"
         title={`${eyebrowTitle(instrumentId)} complete`}
-        description="Persisted to local sessions.json for stub user. Scan and Full Assessment stay separate."
+        description="Scan markers and Full Assessment states stay separate. Nothing is averaged."
       />
 
       {instrumentId === "drain_check" ? (
-        <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <p className="text-sm text-foreground">
-            Total DRAIN score:{" "}
-            <strong>
-              {String(
-                summary.totalScore ??
-                  (result.drain as { totalScore?: number } | undefined)
-                    ?.totalScore,
-              )}
-            </strong>
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Intervention priority this session:{" "}
+        <Card>
+          <CardTitle>Right-now drain</CardTitle>
+          <p className="mt-3 text-3xl font-bold text-gray-800">
             {String(
-              summary.interventionTriggered ??
-                (result.drain as { interventionTriggered?: boolean })?.interventionTriggered,
+              summary.totalScore ??
+                (result.drain as { totalScore?: number } | undefined)?.totalScore ??
+                "—",
             )}
           </p>
-          <p className="mt-3 text-xs text-fixture">
-            DRAIN Check does not write battery states.
-          </p>
-        </div>
+          <CardDescription>
+            Intervention this session:{" "}
+            {summary.interventionTriggered ||
+            (result.drain as { interventionTriggered?: boolean })?.interventionTriggered
+              ? "yes"
+              : "no"}
+            . DRAIN Check does not write battery states.
+          </CardDescription>
+        </Card>
       ) : null}
 
       {instrumentId === "battery_scan" ? (
@@ -508,39 +509,36 @@ function ResultsPanel({
       ) : null}
 
       {instrumentId === "weekly_mode_check" ? (
-        <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <p className="text-sm">
-            Declared mode:{" "}
-            <strong className="capitalize">
-              {String(summary.declaredMode ?? (result.mode as { declaredMode?: string })?.declaredMode)}
-            </strong>
+        <Card>
+          <CardTitle>This week’s mode</CardTitle>
+          <p className="mt-3 text-2xl font-semibold capitalize text-gray-800">
+            {String(
+              summary.declaredMode ??
+                (result.mode as { declaredMode?: string })?.declaredMode ??
+                "—",
+            )}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <CardDescription>
             Suggested (advisory):{" "}
             {summary.suggestedMode
-              ? DRIVING_MODE_LABELS[summary.suggestedMode as keyof typeof DRIVING_MODE_LABELS]
-              : "None yet — complete a Full Assessment to compute signal-count suggestion."}
-          </p>
-        </div>
+              ? DRIVING_MODE_LABELS[
+                  summary.suggestedMode as keyof typeof DRIVING_MODE_LABELS
+                ]
+              : "None yet — complete a Full Assessment to compute a suggestion."}
+          </CardDescription>
+        </Card>
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onAgain}
-          className="rounded-lg border border-border px-4 py-2 text-sm"
-        >
-          Run again
-        </button>
-        <Link
-          to="/dashboard"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          Dashboard (Phase 4 stub)
+        <Link to="/dashboard" className={buttonClassName()}>
+          Open dashboard
         </Link>
+        <Button variant="outline" onClick={onAgain}>
+          Run again
+        </Button>
         <Link
           to="/assessments"
-          className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground"
+          className={buttonClassName({ variant: "ghost" })}
         >
           All instruments
         </Link>
@@ -575,28 +573,41 @@ function ScanResults({
     ratings?: Record<string, string | null>;
     recommendedBatteryId?: string | null;
   };
+  const recommendedName = scan.recommendedBatteryId
+    ? (batteryById.get(scan.recommendedBatteryId)?.name ?? scan.recommendedBatteryId)
+    : null;
   return (
-    <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-foreground">
-        Today&apos;s recommended battery:{" "}
-        {scan.recommendedBatteryId
-          ? (batteryById.get(scan.recommendedBatteryId)?.name ??
-            scan.recommendedBatteryId)
-          : "None (insufficient ratings)"}
-      </p>
-      <ul className="mt-4 space-y-2">
-        {Object.entries(scan.ratings ?? {}).map(([id, level]) => (
-          <li key={id} className="flex justify-between text-sm">
-            <span>{batteryById.get(id)?.name ?? id}</span>
-            <span className="capitalize text-muted-foreground">
-              {level ?? "missing"}
-            </span>
-          </li>
-        ))}
+    <div className="space-y-4">
+      <Card className="border-l-4 border-l-primary">
+        <CardTitle>Today’s recommended battery</CardTitle>
+        <p className="mt-2 text-xl font-semibold text-gray-800">
+          {recommendedName ?? "None — add a few ratings to get a match."}
+        </p>
+      </Card>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {Object.entries(scan.ratings ?? {}).map(([id, level]) => {
+          const battery = batteryById.get(id);
+          return (
+            <li key={id}>
+              <Card className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <BatteryIcon name={battery?.icon} />
+                  <p className="font-semibold text-gray-800">
+                    {battery?.name ?? id}
+                  </p>
+                </div>
+                <ScanMarkerBadge
+                  value={
+                    level === "low" || level === "steady" || level === "full"
+                      ? level
+                      : null
+                  }
+                />
+              </Card>
+            </li>
+          );
+        })}
       </ul>
-      <p className="mt-3 text-xs text-fixture">
-        Scan markers stale after 18h. Does not overwrite Full Assessment states.
-      </p>
     </div>
   );
 }
@@ -635,67 +646,88 @@ function FullResults({
     scored.overcharge ??
     (summary.overcharge as typeof scored.overcharge | undefined);
   const dismissed = Boolean(result.overchargeDismissed);
+  const incomplete =
+    (scored.incompleteBatteryIds ??
+      (summary.incompleteBatteryIds as string[] | undefined) ??
+      []) as string[];
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-        <p className="text-sm text-muted-foreground">
+      <Card>
+        <CardTitle>
           {scored.dashboardComplete
-            ? "Full dashboard (≥5 batteries resolved)."
-            : `Partial results — incomplete: ${(scored.incompleteBatteryIds ?? summary.incompleteBatteryIds as string[] | undefined ?? []).map((id) => batteryById.get(id)?.name ?? id).join(", ") || "none"}`}
-        </p>
-        <p className="mt-2 text-sm">
-          Suggested Driving Mode (advisory):{" "}
-          <strong>
+            ? "Seven-battery dashboard is ready"
+            : "Partial results"}
+        </CardTitle>
+        <CardDescription>
+          {scored.dashboardComplete
+            ? "States come from Capacity, Strain, and Recharge Skill — never averaged."
+            : `Still open: ${
+                incomplete
+                  .map((id) => batteryById.get(id)?.name ?? id)
+                  .join(", ") || "none"
+              }`}
+        </CardDescription>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Suggested driving mode (advisory):{" "}
+          <strong className="font-semibold text-gray-800">
             {scored.suggestedMode
               ? DRIVING_MODE_LABELS[
                   scored.suggestedMode as keyof typeof DRIVING_MODE_LABELS
                 ]
               : String(summary.suggestedMode ?? "—")}
-          </strong>{" "}
-          · signal count {String(scored.signalCount ?? summary.signalCount ?? "—")}
+          </strong>
         </p>
-      </div>
+      </Card>
 
       <ul className="grid gap-3 sm:grid-cols-2">
-        {(scored.batteryResults ?? (summary.batteryResults as typeof scored.batteryResults) ?? []).map(
-          (row) => (
-            <li
-              key={row.batteryId}
-              className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="font-semibold text-gray-800">
-                  {batteryById.get(row.batteryId)?.name ?? row.batteryId}
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  {row.batteryState
-                    ? BATTERY_STATE_LABELS[row.batteryState]
-                    : "insufficient_data"}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Cap{" "}
-                {row.capacity.status === "ok"
-                  ? `${row.capacity.score?.toFixed(2)} (${row.capacity.band})`
-                  : "insufficient_data"}{" "}
-                · Strain{" "}
-                {row.strain.status === "ok"
-                  ? `${row.strain.score?.toFixed(2)} (${row.strain.band})`
-                  : "insufficient_data"}{" "}
-                · Recharge{" "}
-                {row.recharge.status === "ok"
-                  ? `${row.recharge.score?.toFixed(2)} (${row.recharge.band})`
-                  : "insufficient_data"}
-              </p>
+        {(
+          scored.batteryResults ??
+          (summary.batteryResults as typeof scored.batteryResults) ??
+          []
+        ).map((row) => {
+          const battery = batteryById.get(row.batteryId);
+          return (
+            <li key={row.batteryId}>
+              <Card>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <BatteryIcon name={battery?.icon} />
+                    <p className="font-semibold text-gray-800">
+                      {battery?.name ?? row.batteryId}
+                    </p>
+                  </div>
+                  <BatteryStateBadge state={row.batteryState} />
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <dt className="font-medium text-gray-700">Capacity</dt>
+                    <dd className="capitalize">
+                      {bandLabel(row.capacity.status, row.capacity.band)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-gray-700">Strain</dt>
+                    <dd className="capitalize">
+                      {bandLabel(row.strain.status, row.strain.band)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-gray-700">Recharge</dt>
+                    <dd className="capitalize">
+                      {bandLabel(row.recharge.status, row.recharge.band)}
+                    </dd>
+                  </div>
+                </dl>
+              </Card>
             </li>
-          ),
-        )}
+          );
+        })}
       </ul>
 
       {overcharge?.isFlagged && !dismissed ? (
-        <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <p className="text-sm text-foreground">
+        <Card>
+          <p className="text-sm leading-relaxed text-foreground">
             {overcharge.message ??
               "Your results may suggest that one area is being sustained by drawing heavily from other batteries."}
           </p>
@@ -705,14 +737,15 @@ function FullResults({
               .map((id) => batteryById.get(id)?.name ?? id)
               .join(", ")}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
             onClick={() => void onDismissOvercharge()}
-            className="mt-3 rounded-lg border border-border px-3 py-1.5 text-sm"
           >
             Dismiss observation
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : null}
     </div>
   );

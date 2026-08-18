@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, labelClassName } from "@/components/ui/field";
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -53,7 +56,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="max-w-md">
+    <div className="mx-auto max-w-md">
       <PageHeader
         eyebrow="Account"
         title={mode === "sign-in" ? "Sign in" : "Create account"}
@@ -65,52 +68,50 @@ export function AuthPage() {
           stub sessions.
         </p>
       ) : null}
-      <form className="space-y-3 rounded-xl border border-border bg-white p-5" onSubmit={(e) => void onSubmit(e)}>
-        <label className="block text-sm">
-          <span className="font-medium text-gray-800">Email</span>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-gray-800">Password</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        {mode === "sign-up" ? (
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={ageOk}
-              onChange={(e) => setAgeOk(e.target.checked)}
+      <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+        <Card className="space-y-4">
+          <label className="block">
+            <span className={labelClassName}>Email</span>
+            <Input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            I am 18 or older.
           </label>
-        ) : null}
-        {error ? <p className="text-sm text-red-700">{error}</p> : null}
-        {info ? <p className="text-sm">{info}</p> : null}
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          {mode === "sign-in" ? "Sign in" : "Sign up"}
-        </button>
+          <label className="block">
+            <span className={labelClassName}>Password</span>
+            <Input
+              type="password"
+              required
+              minLength={8}
+              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          {mode === "sign-up" ? (
+            <label className="flex min-h-11 items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={ageOk}
+                onChange={(e) => setAgeOk(e.target.checked)}
+              />
+              I am 18 or older.
+            </label>
+          ) : null}
+          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          {info ? <p className="text-sm text-foreground">{info}</p> : null}
+          <Button type="submit" className="w-full">
+            {mode === "sign-in" ? "Sign in" : "Sign up"}
+          </Button>
+        </Card>
       </form>
       <button
         type="button"
-        className="mt-4 text-sm text-primary underline-offset-2 hover:underline"
+        className="mt-4 min-h-11 text-sm font-medium text-primary underline-offset-2 hover:underline"
         onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
       >
         {mode === "sign-in" ? "Need an account?" : "Already have an account?"}

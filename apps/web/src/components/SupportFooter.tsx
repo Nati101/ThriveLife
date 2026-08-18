@@ -13,20 +13,6 @@ export function SupportFooter({ note }: { note?: string }) {
       >
         Always-available support
       </Link>
-      {" · "}
-      <Link
-        to="/privacy-policy"
-        className="inline-block font-medium text-primary underline-offset-2 hover:underline"
-      >
-        Privacy policy (draft)
-      </Link>
-      {" · "}
-      <Link
-        to="/terms"
-        className="inline-block font-medium text-primary underline-offset-2 hover:underline"
-      >
-        Terms (draft)
-      </Link>
     </aside>
   );
 }

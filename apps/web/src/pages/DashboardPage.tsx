@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  BATTERY_STATE_LABELS,
-  type BatteryState,
-} from "@thrivelife/shared";
-import { Target, ArrowRight } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { ArrowRight, Target } from "lucide-react";
 import { fetchDashboard } from "@/lib/member-api";
 import { SupportFooter } from "@/components/SupportFooter";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { buttonClassName } from "@/components/ui/button-styles";
+import { ErrorState, LoadingState } from "@/components/ui/states";
+import {
+  BatteryIcon,
+  BatteryStateBadge,
+  ScanMarkerBadge,
+} from "@/components/BatteryVisual";
+import type { BatteryState } from "@thrivelife/shared";
 
 type Ring = {
   batteryId: string;
@@ -28,6 +32,21 @@ function getGreeting() {
   return "Good evening";
 }
 
+function durationCopy(tier: string) {
+  switch (tier) {
+    case "60s":
+      return "About 1 minute";
+    case "2min":
+      return "About 2 minutes";
+    case "5min":
+      return "About 5 minutes";
+    case "10min":
+      return "About 10 minutes";
+    default:
+      return tier;
+  }
+}
+
 export function DashboardPage() {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +60,10 @@ export function DashboardPage() {
   }, []);
 
   if (error) {
-    return <p className="text-sm text-red-700">{error}</p>;
+    return <ErrorState message={error} />;
   }
   if (!data) {
-    return <p className="text-sm text-muted-foreground">Loading dashboard…</p>;
+    return <LoadingState label="Loading dashboard…" />;
   }
 
   const authority = data.authority as {
@@ -60,6 +79,7 @@ export function DashboardPage() {
     id: string;
     name: string;
     thinkOfItAs: string;
+    icon?: string;
   }>;
   const names = data.batteryNames as Record<string, string>;
   const elements = data.elements as {
@@ -82,193 +102,225 @@ export function DashboardPage() {
   const escalation = data.escalation as { tier: 1 | 2 | null; message: string | null };
   const copy = data.copy as { safety?: { body: string } | null };
   const reminders = data.reminders as { due?: string[] } | undefined;
+  const preferredIsB = elements.todayRecharge.preferredPlan === "plan_b";
+  const modeValue = authority.declaredDrivingMode.value;
 
   return (
     <div className="space-y-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">{getGreeting()}.</h1>
+          <p className="mt-1 text-muted-foreground">
+            Notice, match, respond — then leave the app and re-enter your day.
+          </p>
+        </div>
+        <Link to="/check-in" className={buttonClassName()}>
+          Log a check-in
+        </Link>
+      </div>
+
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">{getGreeting()}.</h1>
-        <p className="text-muted-foreground">
-          Notice, match, respond — then leave the app and re-enter your day.
+        <h2 className="text-3xl font-bold text-gray-800">
+          Five things that matter today
+        </h2>
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+          Battery rings come from the Full Assessment. Today’s markers come from
+          the Battery Scan. They are never averaged.
         </p>
       </div>
 
-      <PageHeader
-        eyebrow="Dashboard"
-        title="Five things that matter today"
-        description="Battery rings come from the Full Assessment. Today’s markers come from the Battery Scan. They are never averaged."
-      />
-
       {reminders?.due && reminders.due.length > 0 ? (
-        <section className="rounded-xl border border-border bg-white p-5">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Full Assessment is still optional
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        <Card>
+          <CardTitle className="text-lg">Full Assessment is still optional</CardTitle>
+          <CardDescription>
             You skipped it during onboarding. About nine minutes fills in the
             seven-battery dashboard. Nothing is lost if today is not the day.
-          </p>
+          </CardDescription>
           <Link
             to="/assessments/full-assessment"
-            className="mt-3 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
+            className={`${buttonClassName({ size: "sm" })} mt-4`}
           >
             Take Full Assessment
           </Link>
-        </section>
+        </Card>
       ) : null}
 
       {authority.conflictNote ? (
-        <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-foreground">
-          {authority.conflictNote}
-        </p>
+        <Card>
+          <p className="text-sm leading-relaxed text-foreground">
+            {authority.conflictNote}
+          </p>
+        </Card>
       ) : null}
 
       {escalation.message ? (
-        <section className="rounded-xl border border-border bg-white p-5">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Extra support, if you want it
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {escalation.message}
-          </p>
-          <Link
-            to="/support"
-            className="mt-3 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
-          >
+        <Card>
+          <CardTitle className="text-lg">Extra support, if you want it</CardTitle>
+          <CardDescription>{escalation.message}</CardDescription>
+          <Link to="/support" className={`${buttonClassName({ variant: "outline", size: "sm" })} mt-4`}>
             Find support
           </Link>
-        </section>
+        </Card>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Card>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Most depleted
-          </h2>
+          </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.mostDepletedBatteryId
               ? names[elements.mostDepletedBatteryId]
               : "Take the Full Assessment to see this."}
           </p>
-        </section>
-        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        </Card>
+        <Card>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Stabilizing start
-          </h2>
+          </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.mostStabilizingBatteryId
               ? names[elements.mostStabilizingBatteryId]
               : "Physical or Daily Rhythms when those read Low."}
           </p>
-        </section>
-        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        </Card>
+        <Card>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Strongest support
-          </h2>
+          </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.strongestSupportBatteryId
               ? names[elements.strongestSupportBatteryId]
-              : "Appears after a Full Assessment with stable capacity + recharge skill."}
+              : "Appears after a Full Assessment with stable capacity and recharge skill."}
           </p>
-        </section>
-        <section className="rounded-xl border border-border bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        </Card>
+        <Card>
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Overcharge flag
-          </h2>
+          </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {authority.overchargeFlag.value?.isFlagged
               ? "Your results may suggest that one area is being sustained by drawing heavily from other batteries."
               : "No overcharge observation on the latest Full Assessment."}
           </p>
-        </section>
+        </Card>
       </div>
 
-      <section className="rounded-xl border border-border border-l-4 border-l-primary bg-white p-5 shadow-sm">
-        <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+      <Card className="border-l-4 border-l-primary">
+        <CardTitle className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
           Today’s recharge — one action
-        </h2>
+        </CardTitle>
         {elements.todayRecharge.action ? (
           <>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {elements.todayRecharge.preferredPlan === "plan_b"
-                ? elements.todayRecharge.action.planBText
-                : elements.todayRecharge.action.planAText}
+            <p className="mt-1 text-sm text-muted-foreground">
+              {durationCopy(elements.todayRecharge.action.durationTier)}
+              {elements.todayRecharge.batteryId
+                ? ` · ${names[elements.todayRecharge.batteryId] ?? ""}`
+                : ""}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Plan B (counts as complete success): {elements.todayRecharge.action.planBText}
-            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div
+                className={`rounded-lg border p-4 ${
+                  preferredIsB
+                    ? "border-border bg-gray-50"
+                    : "border-primary/30 bg-primary/5"
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Plan A{preferredIsB ? "" : " · suggested"}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-800">
+                  {elements.todayRecharge.action.planAText}
+                </p>
+              </div>
+              <div
+                className={`rounded-lg border p-4 ${
+                  preferredIsB
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-gray-50"
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Plan B{preferredIsB ? " · suggested" : ""} · counts as complete
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-800">
+                  {elements.todayRecharge.action.planBText}
+                </p>
+              </div>
+            </div>
             {elements.todayRecharge.action.healthCaution ? (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-3 text-xs text-muted-foreground">
                 {elements.todayRecharge.action.healthCaution}
               </p>
             ) : null}
-            <p className="mt-3 text-xs text-muted-foreground">
-              Source: {elements.todayRecharge.source.replaceAll("_", " ")} · Mode ceiling
-              applies. When you finish, leave the app.
-            </p>
           </>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            {elements.todayRecharge.prompt ?? "Complete a Battery Scan to match a recharge."}
+            {elements.todayRecharge.prompt ??
+              "Complete a Battery Scan to match a recharge."}
           </p>
         )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            to="/check-in"
-            className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-          >
-            Log a check-in
-          </Link>
+        <div className="mt-4">
           <Link
             to="/assessments/battery-scan"
-            className="rounded-lg border border-border px-3 py-2 text-sm font-medium"
+            className={buttonClassName({ variant: "outline" })}
           >
             Battery Scan
           </Link>
         </div>
+      </Card>
+
+      <section>
+        <h2 className="mb-3 text-xl font-semibold text-gray-700">Life Batteries</h2>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {batteries.map((battery) => {
+            const ring = authority.batteryRings.find((r) => r.batteryId === battery.id);
+            const marker = authority.scanMarkers.find((m) => m.batteryId === battery.id);
+            return (
+              <li key={battery.id}>
+                <Card className="h-full">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <BatteryIcon name={battery.icon} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-800">{battery.name}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {battery.thinkOfItAs}
+                        </p>
+                      </div>
+                    </div>
+                    <BatteryStateBadge state={ring?.value ?? null} />
+                  </div>
+                  <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    Today’s scan
+                    <ScanMarkerBadge value={marker?.value ?? null} />
+                  </p>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {batteries.map((battery) => {
-          const ring = authority.batteryRings.find((r) => r.batteryId === battery.id);
-          const marker = authority.scanMarkers.find((m) => m.batteryId === battery.id);
-          return (
-            <li
-              key={battery.id}
-              className="rounded-xl border border-border bg-white px-4 py-3 shadow-sm"
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="font-semibold text-gray-800">{battery.name}</p>
-                <span className="text-xs text-muted-foreground">
-                  {ring?.value ? BATTERY_STATE_LABELS[ring.value] : "No Full Assessment state"}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{battery.thinkOfItAs}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Today’s scan marker:{" "}
-                {marker?.value ? marker.value : "none (complete a Scan)"}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="text-xs text-muted-foreground">
-        Driving mode: {authority.declaredDrivingMode.value ?? "not declared this week"} (
-        {authority.declaredDrivingMode.status}).
+      <p className="text-sm text-muted-foreground">
+        Driving mode this week:{" "}
+        <span className="font-medium capitalize text-gray-800">
+          {modeValue ?? "not declared"}
+        </span>
       </p>
 
-      <div className="flex flex-wrap gap-3 text-sm">
+      <div className="flex flex-wrap gap-3">
         <Link
           to="/progress"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium"
+          className={buttonClassName({ variant: "outline", size: "sm" })}
         >
           Two-chart progress
           <ArrowRight className="h-4 w-4" />
         </Link>
         <Link
           to="/tune-up"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-2 font-medium"
+          className={buttonClassName({ variant: "outline", size: "sm" })}
         >
           One Battery Tune-Up
           <ArrowRight className="h-4 w-4" />
