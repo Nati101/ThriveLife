@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-  Home,
   LayoutDashboard,
   ClipboardCheck,
   BarChart3,
@@ -27,7 +26,7 @@ const LOGO_URL =
 type NavItem = {
   href: string;
   label: string;
-  icon: typeof Home;
+  icon: typeof LayoutDashboard;
   end?: boolean;
 };
 
@@ -60,8 +59,7 @@ export function AppShell() {
   }, [location.pathname]);
 
   const memberLinks: NavItem[] = [
-    { href: "/", label: "Home", icon: Home, end: true },
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
     { href: "/check-in", label: "Check-in", icon: ClipboardCheck },
     { href: "/assessments", label: "Assessments", icon: BarChart3 },
     { href: "/progress", label: "Progress", icon: LineChart },
@@ -86,7 +84,7 @@ export function AppShell() {
       <div className="flex flex-1 overflow-hidden">
         <aside className="hidden flex-col border-r border-border bg-white shadow-sm md:flex md:w-64">
           <div className="flex h-20 items-center border-b border-border px-6">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/dashboard" className="flex items-center gap-3">
               <img
                 src={LOGO_URL}
                 alt="ThriveLife Logo"
@@ -148,7 +146,7 @@ export function AppShell() {
               to="/auth"
               className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
             >
-              {user.isDemo ? "Account" : "Sign in"}
+              Account
             </Link>
             <Link
               to="/privacy"
@@ -169,7 +167,7 @@ export function AppShell() {
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden">
-            <Link to="/" className="flex min-h-11 items-center gap-2">
+            <Link to="/dashboard" className="flex min-h-11 items-center gap-2">
               <img
                 src={LOGO_URL}
                 alt="ThriveLife Logo"
@@ -238,7 +236,7 @@ export function AppShell() {
                         className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
                       >
                         <UserRound size={20} />
-                        <span>{user.isDemo ? "Account" : "Sign in"}</span>
+                        <span>Account</span>
                       </Link>
                     </li>
                     <li>

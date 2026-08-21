@@ -8,7 +8,13 @@ import {
 export function RequireContentTools() {
   const location = useLocation();
   if (!userCanAccessContentTools()) {
-    return <Navigate to="/?denied=admin" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/auth?denied=admin"
+        replace
+        state={{ from: location }}
+      />
+    );
   }
   return <Outlet />;
 }

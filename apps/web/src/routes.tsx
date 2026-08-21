@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { AppShell } from "@/components/AppShell";
 import { RequireAdmin, RequireContentTools } from "@/components/RequireRole";
-import { HomePage } from "@/pages/HomePage";
+import { RequireAuth } from "@/components/RequireAuth";
+import { AppShell } from "@/components/AppShell";
+import { PublicLayout } from "@/components/PublicLayout";
+import { LandingPage } from "@/pages/LandingPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { CheckInPage } from "@/pages/CheckInPage";
@@ -24,64 +26,78 @@ import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
 import { TermsPage } from "@/pages/TermsPage";
 
 /**
- * Route map mirrors the product loop and Base44-style pages/ layout.
- * When the Base44 export lands, merge real UI into these page modules.
+ * Public landing + auth, then gated app shell.
+ * Flow: Landing → Sign in → Onboarding (if needed) → Dashboard.
  */
 export const appRoutes = [
   {
-    path: "/",
-    element: <AppShell />,
+    element: <PublicLayout />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: "onboarding", element: <OnboardingPage /> },
-      { path: "dashboard", element: <DashboardPage /> },
-      { path: "check-in", element: <CheckInPage /> },
-      { path: "tune-up", element: <TuneUpPage /> },
-      { path: "progress", element: <ProgressPage /> },
-      { path: "support", element: <SupportPage /> },
-      { path: "privacy", element: <PrivacyPage /> },
+      { index: true, element: <LandingPage /> },
+      { path: "auth", element: <AuthPage /> },
       { path: "privacy-policy", element: <PrivacyPolicyPage /> },
       { path: "terms", element: <TermsPage /> },
-      { path: "auth", element: <AuthPage /> },
-      { path: "assessments", element: <AssessmentsPage /> },
-      { path: "assessments/drain-check", element: <DrainCheckPage /> },
-      { path: "assessments/battery-scan", element: <BatteryScanPage /> },
-      { path: "assessments/full-assessment", element: <FullAssessmentPage /> },
+    ],
+  },
+  {
+    element: <RequireAuth />,
+    children: [
       {
-        path: "assessments/weekly-mode-check",
-        element: <WeeklyModeCheckPage />,
-      },
-      { path: "dev/role", element: <DevRolePage /> },
-      {
-        path: "admin",
-        element: <RequireContentTools />,
+        element: <AppShell />,
         children: [
-          { index: true, element: <AdminPage /> },
-          { path: "content", element: <AdminContentPage /> },
+          { path: "onboarding", element: <OnboardingPage /> },
+          { path: "dashboard", element: <DashboardPage /> },
+          { path: "check-in", element: <CheckInPage /> },
+          { path: "tune-up", element: <TuneUpPage /> },
+          { path: "progress", element: <ProgressPage /> },
+          { path: "support", element: <SupportPage /> },
+          { path: "privacy", element: <PrivacyPage /> },
+          { path: "assessments", element: <AssessmentsPage /> },
+          { path: "assessments/drain-check", element: <DrainCheckPage /> },
+          { path: "assessments/battery-scan", element: <BatteryScanPage /> },
           {
-            path: "thresholds",
-            element: <RequireAdmin />,
-            children: [{ index: true, element: <AdminThresholdsPage /> }],
+            path: "assessments/full-assessment",
+            element: <FullAssessmentPage />,
           },
-          { path: "copy", element: <AdminCopyPage /> },
+          {
+            path: "assessments/weekly-mode-check",
+            element: <WeeklyModeCheckPage />,
+          },
+          { path: "dev/role", element: <DevRolePage /> },
+          {
+            path: "admin",
+            element: <RequireContentTools />,
+            children: [
+              { index: true, element: <AdminPage /> },
+              { path: "content", element: <AdminContentPage /> },
+              {
+                path: "thresholds",
+                element: <RequireAdmin />,
+                children: [{ index: true, element: <AdminThresholdsPage /> }],
+              },
+              { path: "copy", element: <AdminCopyPage /> },
+            ],
+          },
+          {
+            path: "*",
+            element: (
+              <div className="max-w-md space-y-3">
+                <h1 className="text-3xl font-bold text-gray-800">
+                  Page not found
+                </h1>
+                <p className="text-muted-foreground">
+                  That route is not part of ThriveLife.
+                </p>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Dashboard
+                </Link>
+              </div>
+            ),
+          },
         ],
-      },
-      {
-        path: "*",
-        element: (
-          <div className="max-w-md space-y-3">
-            <h1 className="text-3xl font-bold text-gray-800">Page not found</h1>
-            <p className="text-muted-foreground">
-              That route is not part of ThriveLife.
-            </p>
-            <Link
-              to="/"
-              className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline"
-            >
-              Home
-            </Link>
-          </div>
-        ),
       },
     ],
   },

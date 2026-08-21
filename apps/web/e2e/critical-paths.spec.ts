@@ -20,10 +20,14 @@ test("admin content API returns 403 for a member role", async ({ request }) => {
   expect(body.error).toBe("forbidden");
 });
 
-test("home offers onboarding and demo entry points", async ({ page }) => {
+test("landing offers sign-in and demo tools behind auth", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("ThriveLife").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /Start onboarding/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Get started/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Sign in/i }).first()).toBeVisible();
+  await page.goto("/auth");
+  await expect(page.getByText("Demo tools")).toBeVisible();
+  await page.getByText("Demo tools").click();
   await expect(page.getByRole("button", { name: /Load demo profile/i })).toBeVisible();
 });
 
@@ -31,6 +35,11 @@ test("start Full Assessment, complete via API, see dashboard rings", async ({
   page,
   request,
 }) => {
+  await page.goto("/auth");
+  await page.getByText("Demo tools").click();
+  await page.getByRole("button", { name: /Continue with demo account/i }).click();
+  await page.waitForURL(/\/(dashboard|onboarding)/);
+
   await page.goto("/assessments/full-assessment");
   await expect(page.getByText("Full Assessment").first()).toBeVisible();
 
