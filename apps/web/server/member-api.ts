@@ -39,13 +39,16 @@ import {
   touchMemberRuntime,
 } from "./member-store";
 import {
+  CONTENT_ACCESS_COOKIE,
+  DEV_ROLE_COOKIE,
   emailFromRequest,
   readJsonBody,
   sendJson,
   timezoneFromRequest,
   userIdFromRequest,
 } from "./http";
-import { persistNotificationToCloud, scheduleCloudPersist } from "./cloud-persist";
+import { inviteCodeMatches } from "./content-invite";
+import { persistNotificationToCloud, scheduleCloudPersist, deleteSessionMirrorsForUser } from "./cloud-persist";
 import { sendMail } from "./mailer";
 
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -392,6 +395,32 @@ export async function handleMemberApi(
   const pathname = url.pathname;
   const method = (req.method ?? "GET").toUpperCase();
 
+  if (pathname === "/api/auth/content-invite" && method === "POST") {
+    const body = await readBody(req);
+    const code = typeof body.code === "string" ? body.code : "";
+    if (!inviteCodeMatches(code)) {
+      sendJson(res, 403, {
+        error: "invalid_invite",
+        message: "That content invite code is not valid.",
+      });
+      return true;
+    }
+    res.appendHeader(
+      "Set-Cookie",
+      `${DEV_ROLE_COOKIE}=admin; Path=/; SameSite=Lax; Max-Age=31536000`,
+    );
+    res.appendHeader(
+      "Set-Cookie",
+      `${CONTENT_ACCESS_COOKIE}=1; Path=/; SameSite=Lax; Max-Age=31536000`,
+    );
+    sendJson(res, 200, {
+      ok: true,
+      role: "admin",
+      message: "Content owner access granted. Open /admin to edit items and copy.",
+    });
+    return true;
+  }
+
   if (pathname === "/api/support" && method === "GET") {
     sendJson(res, 200, {
       disclaimer:
@@ -688,6 +717,7 @@ export async function handleMemberApi(
         d.drainResults = d.drainResults.filter((r) => r.userId !== userId);
         d.signalCountLogs = d.signalCountLogs.filter((r) => r.userId !== userId);
       });
+      scheduleCloudPersist(() => deleteSessionMirrorsForUser(userId));
       sendJson(res, 200, { ok: true, deleted: true });
       return true;
     }

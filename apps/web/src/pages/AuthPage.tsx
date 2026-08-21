@@ -9,36 +9,18 @@ import {
   continueAsDemoAccount,
   getSessionUser,
   isAuthenticated,
+  redeemContentInvite,
   setCloudSession,
   setDevRole,
   signOutLocal,
   type SessionUser,
 } from "@/lib/auth";
+import { resolvePostAuthPath } from "@/lib/auth-flow";
 import { seedDemoProfile } from "@/lib/demo-seed";
-import { fetchOnboarding } from "@/lib/member-api";
+import { apiFetch } from "@/lib/api-fetch";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import { ROLES, type Role } from "@thrivelife/shared";
 import { friendlyError } from "@/lib/friendly-error";
-
-async function pathAfterAuth(fallbackNext: string | null): Promise<string> {
-  if (fallbackNext && fallbackNext.startsWith("/") && !fallbackNext.startsWith("//")) {
-    if (fallbackNext === "/" || fallbackNext.startsWith("/auth")) {
-      // fall through to onboarding check
-    } else {
-      return fallbackNext;
-    }
-  }
-  try {
-    const row = await fetchOnboarding();
-    const progress = row.progress as { completedAt?: string; step?: number };
-    const done =
-      Boolean(progress.completedAt) ||
-      (typeof progress.step === "number" && progress.step >= 8);
-    return done ? "/dashboard" : "/onboarding";
-  } catch {
-    return "/onboarding";
-  }
-}
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -46,6 +28,8 @@ export function AuthPage() {
   const { toast } = useToast();
   const initialMode =
     params.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+  const openContent =
+    params.get("access") === "content" || params.get("invite") === "1";
   const [mode, setMode] = useState<"sign-in" | "sign-up">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -57,12 +41,19 @@ export function AuthPage() {
   const [demoName, setDemoName] = useState("Demo Member");
   const [demoRole, setDemoRole] = useState<Role>("user");
   const [demoOpen, setDemoOpen] = useState(false);
+  const [contentOpen, setContentOpen] = useState(openContent);
+  const [inviteCode, setInviteCode] = useState("");
+  const [joelName, setJoelName] = useState("Joel");
   const [seeding, setSeeding] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
   const next = params.get("next");
   const denied = params.get("denied");
 
   useEffect(() => {
     setMode(params.get("mode") === "sign-up" ? "sign-up" : "sign-in");
+    if (params.get("access") === "content" || params.get("invite") === "1") {
+      setContentOpen(true);
+    }
   }, [params]);
 
   function refreshUser() {
@@ -70,8 +61,12 @@ export function AuthPage() {
     setSignedIn(isAuthenticated());
   }
 
-  async function goAfterAuth() {
-    const path = await pathAfterAuth(next);
+  async function goAfterAuth(preferAdmin = false) {
+    if (preferAdmin) {
+      navigate("/admin", { replace: true });
+      return;
+    }
+    const path = await resolvePostAuthPath(next);
     navigate(path, { replace: true });
   }
 
@@ -92,10 +87,11 @@ export function AuthPage() {
     }
     try {
       if (mode === "sign-in") {
-        const { data, error: signError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data, error: signError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
         if (signError) {
           setError(friendlyError(signError, signError.message));
           return;
@@ -136,7 +132,7 @@ export function AuthPage() {
   async function startDemo() {
     const nextUser = continueAsDemoAccount({
       displayName: demoName,
-      role: demoRole,
+      role: import.meta.env.DEV ? demoRole : "user",
     });
     setUser(nextUser);
     setSignedIn(true);
@@ -148,7 +144,10 @@ export function AuthPage() {
     setSeeding(true);
     try {
       if (!isAuthenticated() || !getSessionUser().isDemo) {
-        continueAsDemoAccount({ displayName: demoName, role: demoRole });
+        continueAsDemoAccount({
+          displayName: demoName,
+          role: import.meta.env.DEV ? demoRole : "user",
+        });
       }
       await seedDemoProfile();
       toast("Demo profile ready.");
@@ -158,6 +157,34 @@ export function AuthPage() {
       toast(friendlyError(err, "Could not load the demo profile."));
     } finally {
       setSeeding(false);
+    }
+  }
+
+  async function redeemJoelAccess() {
+    setRedeeming(true);
+    setError(null);
+    try {
+      const local = redeemContentInvite({
+        code: inviteCode,
+        displayName: joelName,
+      });
+      if (!local) {
+        setError("That invite code is not valid.");
+        return;
+      }
+      try {
+        await apiFetch<{ ok: boolean }>("/api/auth/content-invite", {
+          method: "POST",
+          body: JSON.stringify({ code: inviteCode }),
+        });
+      } catch {
+        // Pages may only have static validation; local redeem already succeeded.
+      }
+      refreshUser();
+      toast("Content owner access granted — opening Admin.");
+      await goAfterAuth(true);
+    } finally {
+      setRedeeming(false);
     }
   }
 
@@ -176,7 +203,7 @@ export function AuthPage() {
       <PageHeader
         eyebrow="Account"
         title={mode === "sign-in" ? "Sign in" : "Create account"}
-        description="Sign in to open your dashboard. New members start with a short onboarding."
+        description="Sign in to open your dashboard. Content contributors use the invite section below."
       />
 
       {denied ? (
@@ -184,22 +211,31 @@ export function AuthPage() {
           className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
           role="status"
         >
-          That area needs an editor, reviewer, or admin role. Sign in with the
-          right account, then try again.
+          That area needs content-tool access. Redeem a content invite, or sign
+          in with an editor/admin account.
         </p>
       ) : null}
 
       {signedIn ? (
         <Card className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Signed in{user.isDemo ? " as demo" : ""}
+            Signed in
+            {user.isContentOwner
+              ? " as content owner"
+              : user.isDemo
+                ? " as demo"
+                : ""}
           </p>
           <p className="font-semibold text-gray-800">{user.displayName}</p>
           <p className="text-sm text-muted-foreground">
             {user.email} · {user.role}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void goAfterAuth()}>Continue</Button>
+            {user.isContentOwner ? (
+              <Button onClick={() => void goAfterAuth(true)}>Open Admin</Button>
+            ) : (
+              <Button onClick={() => void goAfterAuth()}>Continue</Button>
+            )}
             <Button variant="ghost" onClick={signOut}>
               Sign out
             </Button>
@@ -244,7 +280,9 @@ export function AuthPage() {
                 I am 18 or older.
               </label>
             ) : null}
-            {error ? <p className="text-sm text-red-700">{error}</p> : null}
+            {error && !contentOpen ? (
+              <p className="text-sm text-red-700">{error}</p>
+            ) : null}
             {info ? <p className="text-sm text-foreground">{info}</p> : null}
             <Button type="submit" className="w-full">
               {mode === "sign-in" ? "Sign in" : "Create account"}
@@ -263,10 +301,9 @@ export function AuthPage() {
       {!signedIn && !supabaseConfigured ? (
         <Card className="space-y-2">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Cloud Auth is not configured in this environment. Use Demo tools to
-            sign in on this device (works on GitHub Pages).
+            Cloud Auth is not configured here. Members use Demo tools; Joel uses
+            Content contributor access.
           </p>
-          {error ? <p className="text-sm text-red-700">{error}</p> : null}
           <Button
             className="w-full"
             onClick={() => {
@@ -274,10 +311,62 @@ export function AuthPage() {
               void startDemo();
             }}
           >
-            Continue with demo account
+            Continue as member (demo)
           </Button>
         </Card>
       ) : null}
+
+      <details
+        className="rounded-xl border border-border bg-white px-4 py-3"
+        open={contentOpen}
+        onToggle={(e) =>
+          setContentOpen((e.target as HTMLDetailsElement).open)
+        }
+      >
+        <summary className="cursor-pointer list-none text-sm font-semibold text-gray-800">
+          Content contributor access
+          <span className="ml-2 font-normal text-muted-foreground">
+            Joel — edit items &amp; copy
+          </span>
+        </summary>
+        <div className="mt-4 space-y-4 border-t border-border pt-4">
+          <p className="text-sm text-muted-foreground">
+            Enter the invite code Nati shared with you. This unlocks Admin:
+            content library, copy, lookups, and publish — without a separate app.
+          </p>
+          <label className="block">
+            <span className={labelClassName}>Your name</span>
+            <Input
+              value={joelName}
+              onChange={(e) => setJoelName(e.target.value)}
+              maxLength={80}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClassName}>Invite code</span>
+            <Input
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              autoComplete="off"
+              placeholder="Paste invite code"
+            />
+          </label>
+          {error && contentOpen ? (
+            <p className="text-sm text-red-700">{error}</p>
+          ) : null}
+          <Button
+            className="w-full"
+            disabled={redeeming || !inviteCode.trim()}
+            onClick={() => void redeemJoelAccess()}
+          >
+            {redeeming ? "Checking…" : "Unlock content tools"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            After unlock, go to Admin → Content library and Copy &amp; lookups.
+            Fixture wording stays labeled until you publish replacements.
+          </p>
+        </div>
+      </details>
 
       <details
         className="rounded-xl border border-border bg-white px-4 py-3"
@@ -287,13 +376,13 @@ export function AuthPage() {
         <summary className="cursor-pointer list-none text-sm font-semibold text-gray-800">
           Demo tools
           <span className="ml-2 font-normal text-muted-foreground">
-            stakeholder walkthrough
+            member walkthrough
           </span>
         </summary>
         <div className="mt-4 space-y-4 border-t border-border pt-4">
           <p className="text-sm text-muted-foreground">
-            Creates a local demo identity. Choose editor or admin to try content
-            tools. Optional: load a seeded profile with sample assessments.
+            Local member identity on this device. Production demos are always the
+            member role — content tools use the invite above.
           </p>
           <label className="block">
             <span className={labelClassName}>Display name</span>
@@ -303,20 +392,22 @@ export function AuthPage() {
               maxLength={80}
             />
           </label>
-          <label className="block">
-            <span className={labelClassName}>Demo role</span>
-            <select
-              className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm"
-              value={demoRole}
-              onChange={(e) => setDemoRole(e.target.value as Role)}
-            >
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </label>
+          {import.meta.env.DEV ? (
+            <label className="block">
+              <span className={labelClassName}>DEV role override</span>
+              <select
+                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm"
+                value={demoRole}
+                onChange={(e) => setDemoRole(e.target.value as Role)}
+              >
+                {ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <Button className="w-full" onClick={() => void startDemo()}>
             Continue with demo account
           </Button>
@@ -330,8 +421,11 @@ export function AuthPage() {
           </Button>
           {import.meta.env.DEV ? (
             <p className="text-xs text-muted-foreground">
-              Local development can also switch roles at{" "}
-              <Link to="/dev/role" className="text-primary underline-offset-2 hover:underline">
+              Local RBAC switcher:{" "}
+              <Link
+                to="/dev/role"
+                className="text-primary underline-offset-2 hover:underline"
+              >
                 /dev/role
               </Link>
               .
@@ -342,7 +436,10 @@ export function AuthPage() {
 
       <p className="text-xs text-muted-foreground">
         By continuing you agree to the{" "}
-        <Link to="/terms" className="text-primary underline-offset-2 hover:underline">
+        <Link
+          to="/terms"
+          className="text-primary underline-offset-2 hover:underline"
+        >
           Terms
         </Link>{" "}
         and{" "}

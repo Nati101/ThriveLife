@@ -7,9 +7,14 @@ import {
   type Permission,
   type Role,
 } from "@thrivelife/shared";
+import {
+  CONTENT_ACCESS_COOKIE,
+  DEV_ROLE_COOKIE,
+  expectedContentInviteCodeFromEnv,
+  matchesContentInviteCode,
+} from "@/lib/content-invite";
 
-/** Cookie name for local role switching until real auth is wired. */
-export const DEV_ROLE_COOKIE = "tl_dev_role";
+export { DEV_ROLE_COOKIE, CONTENT_ACCESS_COOKIE };
 
 const DEMO_USER_KEY = "thrivelife.demo.user.v1";
 const CLOUD_SESSION_KEY = "thrivelife.cloud.session.v1";
@@ -17,10 +22,9 @@ const CLOUD_SESSION_KEY = "thrivelife.cloud.session.v1";
 /**
  * Auth path:
  * - Production: Supabase Auth when VITE keys exist.
- * - Static / Pages demo: localStorage demo account (persists across reloads).
- * - Local/dev: cookie role at /dev/role so RBAC can be tested without cloud.
- *
- * Unauthenticated visitors see the public landing + login only — not the app shell.
+ * - Static / Pages demo: localStorage demo account (member = user only).
+ * - Content owner (Joel): invite code → admin + content-access cookie.
+ * - Local/dev: /dev/role for RBAC testing.
  */
 export const AUTH_PROVIDER_PATH = "supabase_auth" as const;
 
@@ -34,6 +38,8 @@ export type SessionUser = {
   isStub: boolean;
   /** True when the user explicitly continued as a demo account. */
   isDemo: boolean;
+  /** Joel / content contributor via invite — full content tools. */
+  isContentOwner: boolean;
 };
 
 type StoredDemoUser = {
@@ -42,6 +48,7 @@ type StoredDemoUser = {
   email: string;
   role: Role;
   ageVerified: boolean;
+  contentOwner?: boolean;
 };
 
 type StoredCloudSession = {
@@ -50,6 +57,7 @@ type StoredCloudSession = {
   email: string;
   role: Role;
   ageVerified: boolean;
+  contentOwner?: boolean;
 };
 
 function readCookie(name: string): string | null {
@@ -58,6 +66,61 @@ function readCookie(name: string): string | null {
     .split("; ")
     .find((row) => row.startsWith(`${name}=`));
   return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : null;
+}
+
+function writeCookie(name: string, value: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax; max-age=31536000`;
+}
+
+function clearCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; path=/; SameSite=Lax; max-age=0`;
+}
+
+function hasContentAccess(): boolean {
+  return readCookie(CONTENT_ACCESS_COOKIE) === "1";
+}
+
+function grantContentAccess(): void {
+  writeCookie(CONTENT_ACCESS_COOKIE, "1");
+}
+
+function revokeContentAccess(): void {
+  clearCookie(CONTENT_ACCESS_COOKIE);
+}
+
+function writeCookieRole(role: Role): void {
+  writeCookie(DEV_ROLE_COOKIE, role);
+}
+
+/** Client expected invite (Pages-safe; override via VITE_CONTENT_INVITE_CODE). */
+export function expectedClientInviteCode(): string {
+  return expectedContentInviteCodeFromEnv(
+    import.meta.env.VITE_CONTENT_INVITE_CODE,
+    null,
+  );
+}
+
+export function inviteCodeMatches(code: string): boolean {
+  return matchesContentInviteCode(
+    code,
+    import.meta.env.VITE_CONTENT_INVITE_CODE,
+    null,
+  );
+}
+
+/**
+ * Elevated roles only when DEV, content-access cookie, or stored contentOwner.
+ * Prevents casual self-admin via cookie/header on static hosts.
+ */
+function sanitizeRole(
+  role: Role,
+  contentOwner: boolean,
+): Role {
+  if (!canAccessContentTools(role)) return role;
+  if (import.meta.env.DEV || contentOwner || hasContentAccess()) return role;
+  return "user";
 }
 
 function readStoredDemo(): StoredDemoUser | null {
@@ -74,6 +137,7 @@ function readStoredDemo(): StoredDemoUser | null {
       email: parsed.email,
       role,
       ageVerified: parsed.ageVerified !== false,
+      contentOwner: parsed.contentOwner === true,
     };
   } catch {
     return null;
@@ -90,19 +154,16 @@ function readCloudSession(): StoredCloudSession | null {
     const role = parsed.role && isRole(parsed.role) ? parsed.role : "user";
     return {
       id: parsed.id,
-      displayName: parsed.displayName?.trim() || parsed.email.split("@")[0] || "Member",
+      displayName:
+        parsed.displayName?.trim() || parsed.email.split("@")[0] || "Member",
       email: parsed.email,
       role,
       ageVerified: parsed.ageVerified !== false,
+      contentOwner: parsed.contentOwner === true,
     };
   } catch {
     return null;
   }
-}
-
-function writeCookieRole(role: Role): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; SameSite=Lax; max-age=31536000`;
 }
 
 /** True only after demo continue or cloud sign-in — not the anonymous stub. */
@@ -110,36 +171,37 @@ export function isAuthenticated(): boolean {
   return readStoredDemo() !== null || readCloudSession() !== null;
 }
 
-/**
- * Active session user when signed in.
- * When signed out, returns a read-only anonymous stub for rare callers —
- * prefer `isAuthenticated()` + `RequireAuth` for UI gates.
- */
 export function getSessionUser(): SessionUser {
   const stored = readStoredDemo();
   const cookieRaw = readCookie(DEV_ROLE_COOKIE);
   const cookieRole = cookieRaw && isRole(cookieRaw) ? cookieRaw : null;
 
   if (stored) {
+    const contentOwner = stored.contentOwner === true;
+    const role = sanitizeRole(cookieRole ?? stored.role, contentOwner);
     return {
       ...stored,
-      role: cookieRole ?? stored.role,
+      role,
       isStub: true,
       isDemo: true,
+      isContentOwner: contentOwner,
     };
   }
 
   const cloud = readCloudSession();
   if (cloud) {
+    const contentOwner = cloud.contentOwner === true;
+    const role = sanitizeRole(cookieRole ?? cloud.role, contentOwner);
     return {
       ...cloud,
-      role: cookieRole ?? cloud.role,
+      role,
       isStub: false,
       isDemo: false,
+      isContentOwner: contentOwner,
     };
   }
 
-  const role: Role = cookieRole ?? "user";
+  const role = sanitizeRole(cookieRole ?? "user", false);
   return {
     id: "stub-user-local",
     displayName: "Guest",
@@ -148,32 +210,75 @@ export function getSessionUser(): SessionUser {
     ageVerified: false,
     isStub: true,
     isDemo: false,
+    isContentOwner: false,
   };
 }
 
-/** Persist a demo identity for GitHub Pages / static hosts. */
+/** Member demo — always `user` outside DEV (no self-admin). */
 export function continueAsDemoAccount(options?: {
   displayName?: string;
   email?: string;
   role?: Role;
+  id?: string;
 }): SessionUser {
-  const role = options?.role && isRole(options.role) ? options.role : "user";
+  let role: Role =
+    options?.role && isRole(options.role) ? options.role : "user";
+  if (!import.meta.env.DEV && canAccessContentTools(role)) {
+    role = "user";
+  }
   const user: StoredDemoUser = {
-    id: "demo-user-local",
+    id: options?.id?.trim() || "demo-user-local",
     displayName: options?.displayName?.trim() || "Demo Member",
     email: options?.email?.trim() || "demo@thrivelife.local",
     role,
     ageVerified: true,
+    contentOwner: false,
   };
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DEMO_USER_KEY, JSON.stringify(user));
     localStorage.removeItem(CLOUD_SESSION_KEY);
   }
+  revokeContentAccess();
   writeCookieRole(role);
-  return { ...user, isStub: true, isDemo: true };
+  return {
+    ...user,
+    isStub: true,
+    isDemo: true,
+    isContentOwner: false,
+  };
 }
 
-/** Record a cloud (Supabase) sign-in for sync session gates. */
+/**
+ * Joel / content contributor: invite → admin with draft + publish + thresholds.
+ * Opens /admin content library after redeem.
+ */
+export function redeemContentInvite(options: {
+  code: string;
+  displayName?: string;
+}): SessionUser | null {
+  if (!inviteCodeMatches(options.code)) return null;
+  const user: StoredDemoUser = {
+    id: "content-owner-joel",
+    displayName: options.displayName?.trim() || "Joel (Content)",
+    email: "joel@thrivelife.local",
+    role: "admin",
+    ageVerified: true,
+    contentOwner: true,
+  };
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(user));
+    localStorage.removeItem(CLOUD_SESSION_KEY);
+  }
+  grantContentAccess();
+  writeCookieRole("admin");
+  return {
+    ...user,
+    isStub: true,
+    isDemo: true,
+    isContentOwner: true,
+  };
+}
+
 export function setCloudSession(options: {
   id: string;
   email: string;
@@ -188,15 +293,21 @@ export function setCloudSession(options: {
       options.displayName?.trim() ||
       options.email.trim().split("@")[0] ||
       "Member",
-    role,
+    role: sanitizeRole(role, false),
     ageVerified: true,
+    contentOwner: false,
   };
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(CLOUD_SESSION_KEY, JSON.stringify(user));
     localStorage.removeItem(DEMO_USER_KEY);
   }
-  writeCookieRole(role);
-  return { ...user, isStub: false, isDemo: false };
+  writeCookieRole(user.role);
+  return {
+    ...user,
+    isStub: false,
+    isDemo: false,
+    isContentOwner: false,
+  };
 }
 
 export function clearDemoAccount(): void {
@@ -211,27 +322,32 @@ export function clearCloudSession(): void {
   }
 }
 
-/** Full sign-out for demo + cloud markers (and local role cookie reset to user). */
 export function signOutLocal(): void {
   clearDemoAccount();
   clearCloudSession();
+  revokeContentAccess();
   writeCookieRole("user");
 }
 
 export function setDevRole(role: Role): void {
-  writeCookieRole(role);
+  const contentOwner =
+    readStoredDemo()?.contentOwner === true ||
+    readCloudSession()?.contentOwner === true ||
+    hasContentAccess();
+  const next = sanitizeRole(role, contentOwner);
+  writeCookieRole(next);
   const stored = readStoredDemo();
   if (stored && typeof localStorage !== "undefined") {
     localStorage.setItem(
       DEMO_USER_KEY,
-      JSON.stringify({ ...stored, role }),
+      JSON.stringify({ ...stored, role: next }),
     );
   }
   const cloud = readCloudSession();
   if (cloud && typeof localStorage !== "undefined") {
     localStorage.setItem(
       CLOUD_SESSION_KEY,
-      JSON.stringify({ ...cloud, role }),
+      JSON.stringify({ ...cloud, role: next }),
     );
   }
 }

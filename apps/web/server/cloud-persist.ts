@@ -201,3 +201,32 @@ export function scheduleCloudPersist(task: () => Promise<void>): void {
     console.warn("[cloud-persist]", error);
   });
 }
+
+/** Remove dual-written session mirrors for a member (privacy delete). */
+export async function deleteSessionMirrorsForUser(
+  userKey: string,
+): Promise<void> {
+  if (!cloudPersistEnabled() || !userKey.trim()) return;
+  const url = `${supabaseUrl()}/rest/v1/session_mirrors?user_key=eq.${encodeURIComponent(userKey)}`;
+  const key = serviceRoleKey();
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Prefer: "return=minimal",
+      },
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      console.warn(
+        "[cloud-persist] delete mirrors",
+        res.status,
+        detail.slice(0, 400),
+      );
+    }
+  } catch (error) {
+    console.warn("[cloud-persist] delete mirrors", error);
+  }
+}

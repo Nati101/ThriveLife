@@ -27,6 +27,7 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: "true"
+          VITE_CONTENT_INVITE_CODE: ${{ secrets.CONTENT_INVITE_CODE }}
       - name: SPA fallback for client routes
         run: cp apps/web/dist/index.html apps/web/dist/404.html
       - uses: actions/configure-pages@v5

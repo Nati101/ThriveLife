@@ -11,6 +11,7 @@ import {
   UserRound,
   HeartHandshake,
   LineChart,
+  Wrench,
 } from "lucide-react";
 import {
   getSessionUser,
@@ -62,6 +63,7 @@ export function AppShell() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
     { href: "/check-in", label: "Check-in", icon: ClipboardCheck },
     { href: "/assessments", label: "Assessments", icon: BarChart3 },
+    { href: "/tune-up", label: "Tune-Up", icon: Wrench },
     { href: "/progress", label: "Progress", icon: LineChart },
     ...(!onboardingDone
       ? ([{ href: "/onboarding", label: "Onboarding", icon: BookOpen }] as NavItem[])
@@ -138,7 +140,11 @@ export function AppShell() {
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {roleLabel(user.role)}
-                  {user.isDemo ? " · demo" : ""}
+                  {user.isContentOwner
+                    ? " · content owner"
+                    : user.isDemo
+                      ? " · demo"
+                      : ""}
                 </p>
               </div>
             </div>

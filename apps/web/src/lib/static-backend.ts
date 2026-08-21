@@ -62,6 +62,7 @@ import {
   type WorkflowAction,
   type WorkflowStatus,
 } from "@thrivelife/shared";
+import { matchesContentInviteCode } from "./content-invite";
 
 const STORAGE_KEY = "thrivelife.static.v1";
 
@@ -840,6 +841,28 @@ function handleContent(req: StaticApiRequest): StaticApiResult | null {
       alwaysAvailable: true,
       scoreTriggered: false,
       resources: SUPPORT_RESOURCES,
+    });
+  }
+
+  if (path === "/api/auth/content-invite" && method === "POST") {
+    const code = typeof body?.code === "string" ? body.code : "";
+    if (
+      !matchesContentInviteCode(
+        code,
+        import.meta.env.VITE_CONTENT_INVITE_CODE,
+        null,
+      )
+    ) {
+      return json(403, {
+        error: "invalid_invite",
+        message: "That content invite code is not valid.",
+      });
+    }
+    return json(200, {
+      ok: true,
+      role: "admin",
+      message:
+        "Content owner access granted. Open /admin to edit items and copy.",
     });
   }
 

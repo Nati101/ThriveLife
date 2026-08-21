@@ -1,28 +1,47 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { BatteryIcon } from "@/components/BatteryVisual";
 import { Card } from "@/components/ui/card";
 import { buttonClassName } from "@/components/ui/button-styles";
 import { isAuthenticated } from "@/lib/auth";
+import { resolvePostAuthPath } from "@/lib/auth-flow";
 import { FIXTURE_BATTERIES } from "@thrivelife/shared";
 
 const LOGO_URL =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dd5a726e4_ChatGPTImageAug18202508_03_05PM.png";
 
 /**
- * Public marketing / brand entry. Signed-in users go straight into the app.
+ * Public marketing / brand entry. Signed-in users go to onboarding or dashboard.
  */
 export function LandingPage() {
-  if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />;
+  const signedIn = isAuthenticated();
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!signedIn) return;
+    let cancelled = false;
+    void resolvePostAuthPath(null).then((path) => {
+      if (!cancelled) setRedirectTo(path);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
+  if (signedIn) {
+    if (!redirectTo) {
+      return (
+        <p className="text-sm text-muted-foreground" role="status">
+          Opening your app…
+        </p>
+      );
+    }
+    return <Navigate to={redirectTo} replace />;
   }
 
   return (
     <div className="space-y-16">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-white px-6 py-12 shadow-sm md:px-12 md:py-16">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-sky-100/80 via-transparent to-transparent"
-          aria-hidden
-        />
+      <section className="relative overflow-hidden rounded-xl border border-border bg-white px-6 py-12 md:px-12 md:py-16">
         <div className="relative max-w-xl">
           <div className="flex items-center gap-3">
             <img src={LOGO_URL} alt="" className="h-16 w-16 object-contain" />
@@ -50,7 +69,14 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Ages 18+. Invite / pilot access may apply before public beta.
+            Ages 18+. Content contributors:{" "}
+            <Link
+              to="/auth?access=content"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              unlock with invite
+            </Link>
+            .
           </p>
         </div>
       </section>
@@ -101,7 +127,9 @@ export function LandingPage() {
             },
           ].map((item) => (
             <li key={item.step} className="space-y-2">
-              <p className="text-sm font-semibold text-primary">Step {item.step}</p>
+              <p className="text-sm font-semibold text-primary">
+                Step {item.step}
+              </p>
               <p className="font-semibold text-gray-800">{item.title}</p>
               <p className="text-sm text-muted-foreground">{item.body}</p>
             </li>

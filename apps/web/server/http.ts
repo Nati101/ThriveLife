@@ -3,9 +3,10 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isRole, type Role } from "@thrivelife/shared";
+import { canAccessContentTools, isRole, type Role } from "@thrivelife/shared";
+import { CONTENT_ACCESS_COOKIE, DEV_ROLE_COOKIE } from "./content-invite.ts";
 
-export const DEV_ROLE_COOKIE = "tl_dev_role";
+export { DEV_ROLE_COOKIE, CONTENT_ACCESS_COOKIE };
 export const STUB_USER_ID = "stub-user-local";
 export const STUB_USER_EMAIL = "local@thrivelife.dev";
 
@@ -46,9 +47,22 @@ export function headerString(
   return null;
 }
 
+function allowElevatedRoles(req: IncomingMessage): boolean {
+  const cookies = parseCookies(req);
+  if (cookies[CONTENT_ACCESS_COOKIE] === "1") return true;
+  if (process.env.TL_ALLOW_DEV_ROLES === "1") return true;
+  // Vite `npm run dev` is not production; allow local RBAC testing.
+  if (process.env.NODE_ENV !== "production") return true;
+  return false;
+}
+
 export function roleFromRequest(req: IncomingMessage): Role | null {
-  const raw = headerString(req, "x-thrivelife-role") ?? parseCookies(req)[DEV_ROLE_COOKIE];
+  const raw =
+    headerString(req, "x-thrivelife-role") ?? parseCookies(req)[DEV_ROLE_COOKIE];
   if (!raw || !isRole(raw)) return null;
+  if (canAccessContentTools(raw) && !allowElevatedRoles(req)) {
+    return "user";
+  }
   return raw;
 }
 

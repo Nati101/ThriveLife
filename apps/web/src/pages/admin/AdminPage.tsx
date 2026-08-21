@@ -19,10 +19,24 @@ export function AdminPage() {
         </p>
       ) : null}
 
+      {user.isContentOwner ? (
+        <p
+          className="mb-6 rounded-lg border border-border bg-brand-soft px-4 py-3 text-sm text-foreground"
+          role="status"
+        >
+          Content owner access is active. Edit assessment items and recharge
+          copy below, then move drafts through review → publish. See{" "}
+          <span className="font-medium">docs/CONTENT-PACKAGE.md</span> for the
+          object map Joel replaces.
+        </p>
+      ) : null}
+
       <PageHeader
         eyebrow="Content tools"
         title="Admin hub"
-        description={`Signed in as ${roleLabel(user.role)}. Same web app — role-gated routes, not a separate admin deploy.`}
+        description={`Signed in as ${roleLabel(user.role)}${
+          user.isContentOwner ? " (content owner)" : ""
+        }. Same web app — role-gated routes, not a separate admin deploy.`}
       />
 
       <div className="mb-8 rounded-xl border border-border bg-white px-4 py-3 text-sm text-muted-foreground shadow-sm">
@@ -41,7 +55,7 @@ export function AdminPage() {
           linkLabel="Open content"
         >
           Live CRUD for constructs, items, recharge actions, and response
-          scales — seeded from fixtures until Joel’s package lands.
+          scales — replace fixture wording with Joel’s package here.
         </PlaceholderPanel>
         <PlaceholderPanel
           title="Copy & lookups"
@@ -62,9 +76,9 @@ export function AdminPage() {
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground">
-        Switch role from{" "}
+        Account / invite:{" "}
         <Link
-          to="/auth"
+          to="/auth?access=content"
           className="font-medium text-primary underline-offset-2 hover:underline"
         >
           Account

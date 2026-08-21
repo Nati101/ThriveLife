@@ -60,6 +60,8 @@ function withHeaders(init?: RequestInit): Headers {
   }
   const user = getSessionUser();
   headers.set("x-thrivelife-role", user.role);
+  headers.set("x-thrivelife-user", user.id);
+  headers.set("x-thrivelife-email", user.email);
   headers.set("x-thrivelife-tz", Intl.DateTimeFormat().resolvedOptions().timeZone);
   if (typeof document !== "undefined" && !document.cookie.includes(`${DEV_ROLE_COOKIE}=`)) {
     document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(user.role)}; path=/; SameSite=Lax`;

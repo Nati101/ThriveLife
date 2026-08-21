@@ -29,3 +29,14 @@ Changing item wording bumps `version`. Numeric comparison across versions is blo
 
 Seed: `npx tsx packages/shared/scripts/print-seed-sql.ts` → apply to Postgres.
 Admin UI: `/admin/content` and `/admin/copy`.
+
+## Joel access (content owner)
+
+1. Open [Sign in → Content contributor access](https://nati101.github.io/ThriveLife/auth?access=content) (or `/auth?access=content` locally).
+2. Enter the invite code (default for this demo: `joel-thrivelife-content`, or whatever is set in `VITE_CONTENT_INVITE_CODE`).
+3. You land in **Admin** with draft + publish + thresholds.
+4. Edit **Content library** (items, constructs, recharge) and **Copy & lookups**, then publish.
+
+Member demos cannot self-elevate to admin on Pages. Content tools require this invite (or DEV role switcher locally).
+
+Share the invite privately; the default code is also in the Pages JS bundle when not overridden.
