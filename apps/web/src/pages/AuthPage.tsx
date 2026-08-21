@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, labelClassName } from "@/components/ui/field";
@@ -26,6 +25,9 @@ import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import { ROLES, type Role } from "@thrivelife/shared";
 import { friendlyError } from "@/lib/friendly-error";
 
+const LOGO_URL =
+  "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dd5a726e4_ChatGPTImageAug18202508_03_05PM.png";
+
 export function AuthPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -38,14 +40,14 @@ export function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [ageOk, setAgeOk] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser>(() => getSessionUser());
   const [signedIn, setSignedIn] = useState(() => isAuthenticated());
   const [demoName, setDemoName] = useState("Demo Member");
   const [demoRole, setDemoRole] = useState<Role>("user");
-  const [demoOpen, setDemoOpen] = useState(false);
-  const [contentOpen, setContentOpen] = useState(openContent);
+  const [advancedOpen, setAdvancedOpen] = useState(openContent);
   const [inviteCode, setInviteCode] = useState("");
   const [joelName, setJoelName] = useState("Joel");
   const [seeding, setSeeding] = useState(false);
@@ -54,12 +56,12 @@ export function AuthPage() {
   const denied = params.get("denied");
   const cloudRequired = isCloudAuthRequired();
   const inviteAllowed = isContentInviteAllowed();
-  const showDemoTools = !cloudRequired;
+  const showAdvanced = !cloudRequired || inviteAllowed;
 
   useEffect(() => {
     setMode(params.get("mode") === "sign-up" ? "sign-up" : "sign-in");
     if (params.get("access") === "content" || params.get("invite") === "1") {
-      setContentOpen(true);
+      setAdvancedOpen(true);
     }
   }, [params]);
 
@@ -90,18 +92,20 @@ export function AuthPage() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setInfo(null);
     const supabase = getSupabase();
     if (!supabase) {
       setError(
-        "Cloud sign-in is not configured. Open Demo tools below to continue on this device.",
+        "Sign-in is not available yet on this host. Use Try demo below, or ask the team to configure Auth.",
       );
-      setDemoOpen(true);
+      setAdvancedOpen(true);
       return;
     }
     if (mode === "sign-up" && !ageOk) {
       setError("ThriveLife is for adults 18+. Teen accounts are not in V1.");
       return;
     }
+    setBusy(true);
     try {
       if (mode === "sign-in") {
         const { data, error: signError } =
@@ -113,16 +117,13 @@ export function AuthPage() {
           setError(friendlyError(signError, signError.message));
           return;
         }
-        const sessionUser = data.user;
-        if (sessionUser) {
-          await syncSessionFromSupabase();
-        }
+        if (data.user) await syncSessionFromSupabase();
         toast("Signed in.");
         refreshUser();
         await goAfterAuth();
         return;
       }
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -133,10 +134,19 @@ export function AuthPage() {
         setError(friendlyError(signUpError, signUpError.message));
         return;
       }
-      setInfo("Check your email if confirmation is enabled, then sign in.");
+      if (data.session) {
+        await syncSessionFromSupabase();
+        toast("Account created.");
+        refreshUser();
+        await goAfterAuth();
+        return;
+      }
+      setInfo("Check your email to confirm, then sign in.");
       setMode("sign-in");
     } catch (err) {
       setError(friendlyError(err));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -189,10 +199,10 @@ export function AuthPage() {
           body: JSON.stringify({ code: inviteCode }),
         });
       } catch {
-        // Pages may only have static validation; local redeem already succeeded.
+        // Static hosts validate locally only.
       }
       refreshUser();
-      toast("Content owner access granted — opening Admin.");
+      toast("Content access granted.");
       await goAfterAuth(true);
     } finally {
       setRedeeming(false);
@@ -210,66 +220,67 @@ export function AuthPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-8">
-      <PageHeader
-        eyebrow="Account"
-        title={mode === "sign-in" ? "Sign in" : "Create account"}
-        description={
-          cloudRequired
-            ? "Create an account or sign in to use ThriveLife. Your data is tied to your signed-in identity."
-            : "Sign in to open your dashboard. Demo and content-invite tools are available when cloud Auth is optional."
-        }
-      />
-
-      {cloudRequired && !supabaseConfigured ? (
-        <p
-          className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
-          role="alert"
-        >
-          Production Auth is not configured. Set VITE_SUPABASE_URL and
-          VITE_SUPABASE_PUBLISHABLE_KEY, then redeploy.
+    <div className="mx-auto w-full max-w-md space-y-8">
+      <div className="text-center">
+        <img
+          src={LOGO_URL}
+          alt=""
+          className="mx-auto h-14 w-14 object-contain"
+        />
+        <h1 className="mt-4 text-3xl font-bold text-gray-800">
+          {mode === "sign-in" ? "Welcome back" : "Create your account"}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {mode === "sign-in"
+            ? "Sign in to continue to your dashboard."
+            : "Adults 18+. Start with a short onboarding after you join."}
         </p>
-      ) : null}
+      </div>
+
       {denied ? (
         <p
           className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
           role="status"
         >
-          That area needs content-tool access. Redeem a content invite, or sign
-          in with an editor/admin account.
+          That area needs an editor or admin account. Sign in with the right
+          account, or ask for access.
         </p>
       ) : null}
 
       {signedIn ? (
-        <Card className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Signed in
-            {user.isContentOwner
-              ? " as content owner"
-              : user.isDemo
-                ? " as demo"
-                : ""}
-          </p>
-          <p className="font-semibold text-gray-800">{user.displayName}</p>
-          <p className="text-sm text-muted-foreground">
-            {user.email} · {user.role}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {user.isContentOwner ? (
-              <Button onClick={() => void goAfterAuth(true)}>Open Admin</Button>
-            ) : (
-              <Button onClick={() => void goAfterAuth()}>Continue</Button>
-            )}
-            <Button variant="ghost" onClick={signOut}>
+        <Card className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Signed in</p>
+            <p className="mt-1 text-lg font-semibold text-gray-800">
+              {user.displayName}
+            </p>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button
+              className="w-full"
+              onClick={() => void goAfterAuth(user.isContentOwner)}
+            >
+              {user.isContentOwner ? "Open content tools" : "Continue"}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={signOut}>
               Sign out
             </Button>
           </div>
         </Card>
-      ) : null}
+      ) : (
+        <Card className="space-y-5">
+          {!supabaseConfigured ? (
+            <p
+              className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
+              role="status"
+            >
+              Email sign-in is not configured on this host yet. You can still
+              try the demo from More options below.
+            </p>
+          ) : null}
 
-      {!signedIn && supabaseConfigured ? (
-        <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-          <Card className="space-y-4">
+          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
             <label className="block">
               <span className={labelClassName}>Email</span>
               <Input
@@ -278,6 +289,7 @@ export function AuthPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={!supabaseConfigured || busy}
               />
             </label>
             <label className="block">
@@ -291,6 +303,7 @@ export function AuthPage() {
                 }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={!supabaseConfigured || busy}
               />
             </label>
             {mode === "sign-up" ? (
@@ -300,175 +313,162 @@ export function AuthPage() {
                   className="mt-1 h-4 w-4 accent-primary"
                   checked={ageOk}
                   onChange={(e) => setAgeOk(e.target.checked)}
+                  disabled={!supabaseConfigured || busy}
                 />
                 I am 18 or older.
               </label>
             ) : null}
-            {error && !contentOpen ? (
-              <p className="text-sm text-red-700">{error}</p>
-            ) : null}
+            {error ? <p className="text-sm text-red-700">{error}</p> : null}
             {info ? <p className="text-sm text-foreground">{info}</p> : null}
-            <Button type="submit" className="w-full">
-              {mode === "sign-in" ? "Sign in" : "Create account"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!supabaseConfigured || busy}
+            >
+              {busy
+                ? "Please wait…"
+                : mode === "sign-in"
+                  ? "Sign in"
+                  : "Create account"}
             </Button>
-          </Card>
-          <button
-            type="button"
-            className="min-h-11 text-sm font-medium text-primary underline-offset-2 hover:underline"
-            onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-          >
-            {mode === "sign-in" ? "Need an account?" : "Already have an account?"}
-          </button>
-        </form>
-      ) : null}
+          </form>
 
-      {!signedIn && !supabaseConfigured && showDemoTools ? (
-        <Card className="space-y-2">
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Cloud Auth is not configured here. Members use Demo tools; Joel uses
-            Content contributor access.
+          <p className="text-center text-sm text-muted-foreground">
+            {mode === "sign-in" ? (
+              <>
+                New here?{" "}
+                <button
+                  type="button"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setMode("sign-up");
+                    setError(null);
+                    setInfo(null);
+                  }}
+                >
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setMode("sign-in");
+                    setError(null);
+                    setInfo(null);
+                  }}
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
-          <Button
-            className="w-full"
-            onClick={() => {
-              setDemoOpen(true);
-              void startDemo();
-            }}
-          >
-            Continue as member (demo)
-          </Button>
         </Card>
-      ) : null}
-
-      {inviteAllowed ? (
-      <details
-        className="rounded-xl border border-border bg-white px-4 py-3"
-        open={contentOpen}
-        onToggle={(e) =>
-          setContentOpen((e.target as HTMLDetailsElement).open)
-        }
-      >
-        <summary className="cursor-pointer list-none text-sm font-semibold text-gray-800">
-          Content contributor access
-          <span className="ml-2 font-normal text-muted-foreground">
-            Joel — edit items &amp; copy
-          </span>
-        </summary>
-        <div className="mt-4 space-y-4 border-t border-border pt-4">
-          <p className="text-sm text-muted-foreground">
-            Enter the invite code Nati shared with you. This unlocks Admin:
-            content library, copy, lookups, and publish — without a separate app.
-          </p>
-          <label className="block">
-            <span className={labelClassName}>Your name</span>
-            <Input
-              value={joelName}
-              onChange={(e) => setJoelName(e.target.value)}
-              maxLength={80}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClassName}>Invite code</span>
-            <Input
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              autoComplete="off"
-              placeholder="Paste invite code"
-            />
-          </label>
-          {error && contentOpen ? (
-            <p className="text-sm text-red-700">{error}</p>
-          ) : null}
-          <Button
-            className="w-full"
-            disabled={redeeming || !inviteCode.trim()}
-            onClick={() => void redeemJoelAccess()}
-          >
-            {redeeming ? "Checking…" : "Unlock content tools"}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            After unlock, go to Admin → Content library and Copy &amp; lookups.
-            Fixture wording stays labeled until you publish replacements.
-          </p>
-        </div>
-      </details>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Content editors: ask an admin to set your{" "}
-          <code className="text-xs">profiles.role</code> to editor or admin in
-          Supabase.
-        </p>
       )}
 
-      {showDemoTools ? (
-      <details
-        className="rounded-xl border border-border bg-white px-4 py-3"
-        open={demoOpen}
-        onToggle={(e) => setDemoOpen((e.target as HTMLDetailsElement).open)}
-      >
-        <summary className="cursor-pointer list-none text-sm font-semibold text-gray-800">
-          Demo tools
-          <span className="ml-2 font-normal text-muted-foreground">
-            member walkthrough
-          </span>
-        </summary>
-        <div className="mt-4 space-y-4 border-t border-border pt-4">
-          <p className="text-sm text-muted-foreground">
-            Local member identity on this device. Production demos are always the
-            member role — content tools use the invite above.
-          </p>
-          <label className="block">
-            <span className={labelClassName}>Display name</span>
-            <Input
-              value={demoName}
-              onChange={(e) => setDemoName(e.target.value)}
-              maxLength={80}
-            />
-          </label>
-          {import.meta.env.DEV ? (
-            <label className="block">
-              <span className={labelClassName}>DEV role override</span>
-              <select
-                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm"
-                value={demoRole}
-                onChange={(e) => setDemoRole(e.target.value as Role)}
-              >
-                {ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <Button className="w-full" onClick={() => void startDemo()}>
-            Continue with demo account
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={seeding}
-            onClick={() => void loadDemoProfile()}
-          >
-            {seeding ? "Loading demo…" : "Load demo profile"}
-          </Button>
-          {import.meta.env.DEV ? (
-            <p className="text-xs text-muted-foreground">
-              Local RBAC switcher:{" "}
-              <Link
-                to="/dev/role"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                /dev/role
-              </Link>
-              .
-            </p>
-          ) : null}
-        </div>
-      </details>
+      {showAdvanced && !signedIn ? (
+        <details
+          className="rounded-xl border border-border bg-white px-4 py-3"
+          open={advancedOpen}
+          onToggle={(e) =>
+            setAdvancedOpen((e.target as HTMLDetailsElement).open)
+          }
+        >
+          <summary className="cursor-pointer list-none text-sm font-medium text-muted-foreground">
+            More options
+          </summary>
+          <div className="mt-4 space-y-6 border-t border-border pt-4">
+            {!cloudRequired ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-800">Try demo</p>
+                <p className="text-sm text-muted-foreground">
+                  Explore the product on this device without creating an
+                  account.
+                </p>
+                <label className="block">
+                  <span className={labelClassName}>Display name</span>
+                  <Input
+                    value={demoName}
+                    onChange={(e) => setDemoName(e.target.value)}
+                    maxLength={80}
+                  />
+                </label>
+                {import.meta.env.DEV ? (
+                  <label className="block">
+                    <span className={labelClassName}>DEV role</span>
+                    <select
+                      className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm"
+                      value={demoRole}
+                      onChange={(e) => setDemoRole(e.target.value as Role)}
+                    >
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void startDemo()}
+                >
+                  Continue with demo
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  disabled={seeding}
+                  onClick={() => void loadDemoProfile()}
+                >
+                  {seeding ? "Loading…" : "Load seeded demo profile"}
+                </Button>
+              </div>
+            ) : null}
+
+            {inviteAllowed ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-800">
+                  Content contributor
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  For Joel and editors — unlock Admin with your invite code.
+                </p>
+                <label className="block">
+                  <span className={labelClassName}>Name</span>
+                  <Input
+                    value={joelName}
+                    onChange={(e) => setJoelName(e.target.value)}
+                    maxLength={80}
+                  />
+                </label>
+                <label className="block">
+                  <span className={labelClassName}>Invite code</span>
+                  <Input
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    autoComplete="off"
+                    placeholder="Paste invite code"
+                  />
+                </label>
+                <Button
+                  className="w-full"
+                  disabled={redeeming || !inviteCode.trim()}
+                  onClick={() => void redeemJoelAccess()}
+                >
+                  {redeeming ? "Checking…" : "Unlock content tools"}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </details>
       ) : null}
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-center text-xs text-muted-foreground">
         By continuing you agree to the{" "}
         <Link
           to="/terms"
@@ -483,7 +483,7 @@ export function AuthPage() {
         >
           Privacy policy
         </Link>
-        . Legal counsel review is still pending before beta.
+        .
       </p>
     </div>
   );

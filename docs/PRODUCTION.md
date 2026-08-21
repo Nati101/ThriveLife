@@ -78,9 +78,11 @@ In production mode:
 - [ ] Joel fixture replacement before claiming production content quality
 - [ ] Do **not** point real users at GitHub Pages for member data
 
-## Smoke test
+## Auth on GitHub Pages
 
-1. Sign up a new user → lands on onboarding
-2. Complete a Battery Scan → dashboard updates for **that** user only
-3. Second browser / account does not see the first user’s sessions
-4. Member role cannot open `/admin`; editor/admin can after profile role set
+Pages can show email/password when these repo secrets are set for the Pages workflow:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`)
+
+Without them, the form is visible but disabled and demo stays under **More options**. Member data on Pages still uses browser storage until you deploy the Node host in this guide.

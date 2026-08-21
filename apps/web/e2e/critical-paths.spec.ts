@@ -20,26 +20,33 @@ test("admin content API returns 403 for a member role", async ({ request }) => {
   expect(body.error).toBe("forbidden");
 });
 
-test("landing offers sign-in; Joel content invite unlocks admin", async ({
+test("auth page shows email sign-in and keeps demo under More options", async ({
   page,
 }) => {
-  await page.goto("/");
-  await expect(page.getByText("ThriveLife").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /Get started/i }).first()).toBeVisible();
+  await page.goto("/auth");
+  await expect(page.getByRole("heading", { name: /Welcome back|Create your account/i })).toBeVisible();
+  await expect(page.getByLabel(/^Email$/i)).toBeVisible();
+  await expect(page.getByLabel(/^Password$/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Sign in$/i })).toBeVisible();
+  await page.getByText("More options").click();
+  await expect(page.getByRole("button", { name: /Continue with demo/i })).toBeVisible();
+});
+
+test("content invite unlocks admin from More options", async ({ page }) => {
   await page.goto("/auth?access=content");
-  await expect(page.getByText("Content contributor access")).toBeVisible();
+  await expect(page.getByText("Content contributor")).toBeVisible();
   await page.getByPlaceholder("Paste invite code").fill("joel-thrivelife-content");
   await page.getByRole("button", { name: /Unlock content tools/i }).click();
   await page.waitForURL(/\/admin/);
   await expect(page.getByText("Admin hub").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open content/i })).toBeVisible();
 });
 
-test("demo member cannot pick admin role on auth", async ({ page }) => {
+test("demo member can continue from More options", async ({ page }) => {
   await page.goto("/auth");
-  await page.getByText("Demo tools").click();
-  await expect(page.getByRole("button", { name: /Load demo profile/i })).toBeVisible();
-  await expect(page.getByLabel(/DEV role override/i)).toHaveCount(0);
+  await page.getByText("More options").click();
+  await expect(page.getByRole("button", { name: /Load seeded demo profile/i })).toBeVisible();
+  await page.getByRole("button", { name: /Continue with demo/i }).click();
+  await page.waitForURL(/\/(dashboard|onboarding)/);
 });
 
 test("start Full Assessment, complete via API, see dashboard rings", async ({
@@ -47,8 +54,8 @@ test("start Full Assessment, complete via API, see dashboard rings", async ({
   request,
 }) => {
   await page.goto("/auth");
-  await page.getByText("Demo tools").click();
-  await page.getByRole("button", { name: /Continue with demo account/i }).click();
+  await page.getByText("More options").click();
+  await page.getByRole("button", { name: /Continue with demo/i }).click();
   await page.waitForURL(/\/(dashboard|onboarding)/);
 
   await page.goto("/assessments/full-assessment");

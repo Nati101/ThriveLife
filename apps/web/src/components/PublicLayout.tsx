@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { isAuthenticated } from "@/lib/auth";
 import { buttonClassName } from "@/components/ui/button-styles";
 
@@ -8,6 +8,8 @@ const LOGO_URL =
 /** Minimal chrome for landing, login, and public legal pages. */
 export function PublicLayout() {
   const signedIn = isAuthenticated();
+  const location = useLocation();
+  const onAuth = location.pathname === "/auth" || location.pathname.endsWith("/auth");
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50/50 text-foreground">
@@ -24,25 +26,34 @@ export function PublicLayout() {
             />
             <span className="text-xl font-bold text-gray-800">ThriveLife</span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-2" aria-label="Account">
-            {signedIn ? (
-              <Link to="/dashboard" className={buttonClassName()}>
-                Open app
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/auth"
-                  className={buttonClassName({ variant: "ghost" })}
-                >
-                  Sign in
+          {!onAuth ? (
+            <nav className="flex flex-wrap items-center gap-2" aria-label="Account">
+              {signedIn ? (
+                <Link to="/dashboard" className={buttonClassName()}>
+                  Open app
                 </Link>
-                <Link to="/auth?mode=sign-up" className={buttonClassName()}>
-                  Get started
-                </Link>
-              </>
-            )}
-          </nav>
+              ) : (
+                <>
+                  <Link
+                    to="/auth"
+                    className={buttonClassName({ variant: "ghost" })}
+                  >
+                    Sign in
+                  </Link>
+                  <Link to="/auth?mode=sign-up" className={buttonClassName()}>
+                    Get started
+                  </Link>
+                </>
+              )}
+            </nav>
+          ) : (
+            <Link
+              to="/"
+              className="min-h-11 text-sm font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Back to home
+            </Link>
+          )}
         </div>
       </header>
 
@@ -65,12 +76,6 @@ export function PublicLayout() {
               className="font-medium text-primary underline-offset-2 hover:underline"
             >
               Terms
-            </Link>
-            <Link
-              to="/auth"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              Sign in
             </Link>
           </p>
         </div>
