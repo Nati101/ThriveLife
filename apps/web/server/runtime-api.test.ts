@@ -230,3 +230,22 @@ describe("rate limiter", () => {
     assert.equal(rateLimit("test", 5, 60_000, 1_000).allowed, false);
   });
 });
+
+describe("production JWT gate", () => {
+  it("rejects member APIs without JWT when TL_REQUIRE_JWT=1", async () => {
+    const prev = process.env.TL_REQUIRE_JWT;
+    process.env.TL_REQUIRE_JWT = "1";
+    try {
+      const result = await invoke(handleMemberApi, {
+        method: "GET",
+        path: "/api/me/dashboard",
+        headers: { "x-thrivelife-user": "someone", "x-thrivelife-role": "user" },
+      });
+      assert.equal(result.status, 401);
+      assert.equal(result.json.error, "unauthorized");
+    } finally {
+      if (prev === undefined) delete process.env.TL_REQUIRE_JWT;
+      else process.env.TL_REQUIRE_JWT = prev;
+    }
+  });
+});

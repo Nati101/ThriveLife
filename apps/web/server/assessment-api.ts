@@ -38,7 +38,11 @@ import {
   type ScanRecommendationRow,
   type SessionsDocument,
 } from "./sessions-store";
-import { readJsonBody, sendJson, userIdFromRequest, type JsonBody } from "./http";
+import { readJsonBody, sendJson, type JsonBody } from "./http";
+import {
+  requireJwtAuth,
+  resolveRequestIdentity,
+} from "./request-identity";
 
 function matchPath(
   pathname: string,
@@ -463,7 +467,15 @@ export async function handleAssessmentApi(
 
   const method = (req.method ?? "GET").toUpperCase();
   const pathname = url.pathname;
-  const userId = userIdFromRequest(req);
+  const identity = await resolveRequestIdentity(req);
+  if (requireJwtAuth() && identity.source !== "jwt") {
+    sendJson(res, 401, {
+      error: "unauthorized",
+      message: "Sign in with Supabase Auth to use assessments.",
+    });
+    return true;
+  }
+  const userId = identity.userId;
 
   try {
     // Instrument bootstrap (items + scales from content store — not fixture imports)

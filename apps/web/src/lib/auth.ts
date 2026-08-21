@@ -13,6 +13,7 @@ import {
   expectedContentInviteCodeFromEnv,
   matchesContentInviteCode,
 } from "@/lib/content-invite";
+import { getSupabase } from "@/lib/supabase";
 
 export { DEV_ROLE_COOKIE, CONTENT_ACCESS_COOKIE };
 
@@ -308,6 +309,45 @@ export function setCloudSession(options: {
     isDemo: false,
     isContentOwner: false,
   };
+}
+
+/**
+ * After Supabase sign-in: load profiles.role (never user_metadata) into session.
+ */
+export async function syncSessionFromSupabase(): Promise<SessionUser | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData.session;
+  if (!session?.user) return null;
+
+  const user = session.user;
+  let role: Role = "user";
+  let displayName =
+    (user.user_metadata?.display_name as string | undefined)?.trim() ||
+    user.email?.split("@")[0] ||
+    "Member";
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, display_name, email, age_verified")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile) {
+    if (profile.role && isRole(profile.role)) role = profile.role;
+    if (profile.display_name?.trim()) displayName = profile.display_name.trim();
+  } else {
+    const appRole = (user.app_metadata?.role as string | undefined) ?? "";
+    if (isRole(appRole)) role = appRole;
+  }
+
+  return setCloudSession({
+    id: user.id,
+    email: user.email ?? profile?.email ?? "member@thrivelife.local",
+    displayName,
+    role,
+  });
 }
 
 export function clearDemoAccount(): void {

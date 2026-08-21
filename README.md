@@ -10,10 +10,11 @@ Helps adults notice low energy, identify which Life Battery is most depleted, an
 
 V1 **web beta** against Developer Specification v1.0: Phases 0–9 are implemented with **fixture content** (labeled `[FIXTURE]`). This is **not** clinical validation.
 
-- **Runtime:** Vite + React + TypeScript. `npm run dev` uses a local JSON store via `/api` middleware.
-- **Database:** Supabase Postgres in **Canada Central (`ca-central-1`)**, project `ThriveLife` (`bpbfezmierdtproczkpj`). Schema, RLS, and fixture seed are live. Member sessions in local dev still write to `apps/web/data/sessions.json`.
-- **Auth:** Supabase Auth is the production identity store. Roles live in `profiles` / `app_metadata` — never `user_metadata`. `/dev/role` is a **DEV-only** stub.
+- **Runtime:** Vite + React + TypeScript. `npm run dev` uses a local JSON store via `/api` middleware. **Real users:** `npm run build && npm run start` (Node + Supabase JWT) — see [docs/PRODUCTION.md](docs/PRODUCTION.md).
+- **Database:** Supabase Postgres in **Canada Central (`ca-central-1`)**, project `ThriveLife` (`bpbfezmierdtproczkpj`). Schema, RLS, and fixture seed are live. Member sessions in local/prod Node still write to `apps/web/data/*.json` with optional dual-write.
+- **Auth:** Supabase Auth is the production identity store. Roles live in `profiles` / `app_metadata` — never `user_metadata`. Demo tools are hidden in production builds when Supabase is configured. `/dev/role` is DEV-only.
 - **Compliance:** [docs/SPEC-COMPLIANCE.md](docs/SPEC-COMPLIANCE.md)
+- **Production cutover:** [docs/PRODUCTION.md](docs/PRODUCTION.md)
 
 **Repo:** https://github.com/Nati101/ThriveLife (private). Do not claim psychometric validity.
 
@@ -21,7 +22,7 @@ V1 **web beta** against Developer Specification v1.0: Phases 0–9 are implement
 |----------|---------|
 | [docs/SPEC-SUMMARY.md](docs/SPEC-SUMMARY.md) | Concise product & architecture summary |
 | [docs/TASKS.md](docs/TASKS.md) | Phased build checklist |
-| [docs/SPEC-COMPLIANCE.md](docs/SPEC-COMPLIANCE.md) | Spec requirement → Pass / Partial / Fail |
+| [docs/PRODUCTION.md](docs/PRODUCTION.md) | Deploy Node + JWT for real users |
 | [docs/CONTENT-PACKAGE.md](docs/CONTENT-PACKAGE.md) | Fixture package Joel can swap |
 | [docs/QUESTIONS.md](docs/QUESTIONS.md) | Clarifying questions & open risks |
 | [docs/ThriveLife-Developer-Specification-v1.txt](docs/ThriveLife-Developer-Specification-v1.txt) | Full developer spec |

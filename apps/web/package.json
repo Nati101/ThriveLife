@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --pretty false",
     "test": "tsx --test server/api-contract.test.ts server/runtime-api.test.ts server/static-backend.test.ts",
     "test:e2e": "playwright test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "NODE_ENV=production tsx server/prod.ts"
   },
   "dependencies": {
     "@thrivelife/shared": "*",

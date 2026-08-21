@@ -33,8 +33,11 @@ import {
 import {
   STUB_USER_ID,
   sendJson,
-  roleFromRequest,
 } from "./http";
+import {
+  requireJwtAuth,
+  resolveRequestIdentity,
+} from "./request-identity";
 
 type MutableCollection = Exclude<
   keyof ContentDocument,
@@ -120,33 +123,40 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(text) as unknown;
 }
 
-function requireContentTools(
+async function requireContentTools(
   req: IncomingMessage,
   res: ServerResponse,
-): Role | null {
-  const role = roleFromRequest(req);
-  if (!role) {
+): Promise<Role | null> {
+  const identity = await resolveRequestIdentity(req);
+  if (requireJwtAuth() && identity.source !== "jwt") {
+    sendJson(res, 401, {
+      error: "unauthorized",
+      message: "Sign in with Supabase Auth to use content tools.",
+    });
+    return null;
+  }
+  if (!identity.explicitRole && identity.source !== "jwt") {
     sendJson(res, 401, {
       error: "unauthorized",
       message: "Missing or invalid role cookie. Use /dev/role.",
     });
     return null;
   }
-  if (!canAccessContentTools(role)) {
+  if (!canAccessContentTools(identity.role)) {
     sendJson(res, 403, {
       error: "forbidden",
       message: "Content tools require editor, reviewer, or admin.",
     });
     return null;
   }
-  return role;
+  return identity.role;
 }
 
-function requireDraft(
+async function requireDraft(
   req: IncomingMessage,
   res: ServerResponse,
-): Role | null {
-  const role = requireContentTools(req, res);
+): Promise<Role | null> {
+  const role = await requireContentTools(req, res);
   if (!role) return null;
   if (!hasPermission(role, "canDraftContent")) {
     sendJson(res, 403, {
@@ -158,11 +168,11 @@ function requireDraft(
   return role;
 }
 
-function requireThresholdEdit(
+async function requireThresholdEdit(
   req: IncomingMessage,
   res: ServerResponse,
-): Role | null {
-  const role = requireContentTools(req, res);
+): Promise<Role | null> {
+  const role = await requireContentTools(req, res);
   if (!role) return null;
   if (!hasPermission(role, "canEditThresholds")) {
     sendJson(res, 403, {
@@ -210,6 +220,7 @@ export async function handleContentApi(
 
   try {
     if (pathname === "/api/health" && method === "GET") {
+      const { requireJwtAuth } = await import("./request-identity.ts");
       sendJson(res, 200, {
         ok: true,
         store: process.env.VITE_SUPABASE_URL ? "supabase+json-fallback" : "json-file",
@@ -217,6 +228,7 @@ export async function handleContentApi(
         sessionsStore: "apps/web/data/sessions.json",
         supabaseUrl: process.env.VITE_SUPABASE_URL ?? null,
         region: "ca-central-1",
+        jwtRequired: requireJwtAuth(),
         cloudPersist: Boolean(
           process.env.SUPABASE_SERVICE_ROLE_KEY &&
             (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) &&
@@ -231,20 +243,20 @@ export async function handleContentApi(
     }
 
     if (pathname === "/api/content" && method === "GET") {
-      if (!requireContentTools(req, res)) return true;
+      if (!(await requireContentTools(req, res))) return true;
       const doc = readContentDocument();
       sendJson(res, 200, { summary: summarizeContent(doc), document: doc });
       return true;
     }
 
     if (pathname === "/api/content/summary" && method === "GET") {
-      if (!requireContentTools(req, res)) return true;
+      if (!(await requireContentTools(req, res))) return true;
       sendJson(res, 200, summarizeContent(readContentDocument()));
       return true;
     }
 
     if (pathname === "/api/content/reset" && method === "POST") {
-      const role = requireThresholdEdit(req, res);
+      const role = await requireThresholdEdit(req, res);
       if (!role) return true;
       const doc = resetContentDocument();
       sendJson(res, 200, {
@@ -266,7 +278,7 @@ export async function handleContentApi(
       const collection: CollectionName = rawCollection;
 
       if (method === "GET") {
-        if (!requireContentTools(req, res)) return true;
+        if (!(await requireContentTools(req, res))) return true;
         const doc = readContentDocument();
         sendJson(res, 200, { items: doc[collection] });
         return true;
@@ -274,7 +286,7 @@ export async function handleContentApi(
 
       if (method === "POST") {
         if (collection === "scoringThresholds") {
-          const role = requireThresholdEdit(req, res);
+          const role = await requireThresholdEdit(req, res);
           if (!role) return true;
           const body = (await readBody(req)) as Partial<ScoringThreshold>;
           const created: ScoringThreshold = {
@@ -312,7 +324,7 @@ export async function handleContentApi(
           return true;
         }
 
-        const role = requireDraft(req, res);
+        const role = await requireDraft(req, res);
         if (!role) return true;
         const body = await readBody(req);
 
@@ -470,7 +482,7 @@ export async function handleContentApi(
         sendJson(res, 404, { error: "unknown_collection" });
         return true;
       }
-      const role = requireContentTools(req, res);
+      const role = await requireContentTools(req, res);
       if (!role) return true;
       const body = (await readBody(req)) as { action?: WorkflowAction };
       const action = body.action;
@@ -541,7 +553,7 @@ export async function handleContentApi(
       const id = itemMatch.id!;
 
       if (method === "GET") {
-        if (!requireContentTools(req, res)) return true;
+        if (!(await requireContentTools(req, res))) return true;
         const doc = readContentDocument();
         const list = doc[collection];
         if (!Array.isArray(list)) {
@@ -570,7 +582,7 @@ export async function handleContentApi(
 
       if (method === "PUT" || method === "PATCH") {
         if (collection === "scoringThresholds") {
-          const role = requireThresholdEdit(req, res);
+          const role = await requireThresholdEdit(req, res);
           if (!role) return true;
           const body = (await readBody(req)) as Partial<ScoringThreshold>;
           let updated: ScoringThreshold | null = null;
@@ -615,7 +627,7 @@ export async function handleContentApi(
           return true;
         }
 
-        const role = requireDraft(req, res);
+        const role = await requireDraft(req, res);
         if (!role) return true;
         const body = (await readBody(req)) as Record<string, unknown>;
 
@@ -655,10 +667,10 @@ export async function handleContentApi(
 
       if (method === "DELETE") {
         if (collection === "scoringThresholds") {
-          const role = requireThresholdEdit(req, res);
+          const role = await requireThresholdEdit(req, res);
           if (!role) return true;
         } else {
-          if (!requireDraft(req, res)) return true;
+          if (!(await requireDraft(req, res))) return true;
         }
 
         // Soft-deactivate items instead of hard delete when possible

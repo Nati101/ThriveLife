@@ -69,14 +69,7 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Ages 18+. Content contributors:{" "}
-            <Link
-              to="/auth?access=content"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              unlock with invite
-            </Link>
-            .
+            Ages 18+.
           </p>
         </div>
       </section>

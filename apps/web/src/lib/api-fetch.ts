@@ -1,4 +1,6 @@
 import { DEV_ROLE_COOKIE, getSessionUser } from "@/lib/auth";
+import { isCloudAuthRequired } from "@/lib/production";
+import { getSupabase } from "@/lib/supabase";
 import { dispatchStaticRequest } from "@/lib/static-backend";
 
 export type ApiError = Error & {
@@ -52,7 +54,7 @@ export function resetLiveApiProbe(): void {
   liveProbe = null;
 }
 
-function withHeaders(init?: RequestInit): Headers {
+async function withHeaders(init?: RequestInit): Promise<Headers> {
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
   if (init?.body && !headers.has("Content-Type")) {
@@ -65,6 +67,13 @@ function withHeaders(init?: RequestInit): Headers {
   headers.set("x-thrivelife-tz", Intl.DateTimeFormat().resolvedOptions().timeZone);
   if (typeof document !== "undefined" && !document.cookie.includes(`${DEV_ROLE_COOKIE}=`)) {
     document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(user.role)}; path=/; SameSite=Lax`;
+  }
+
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.set("Authorization", `Bearer ${token}`);
   }
   return headers;
 }
@@ -89,6 +98,13 @@ function parseBody(init?: RequestInit): unknown {
 }
 
 function fromStatic<T>(path: string, init?: RequestInit): T {
+  if (isCloudAuthRequired()) {
+    throwApiError(503, {
+      error: "api_unavailable",
+      message:
+        "This production build requires a live API host. Static browser storage is disabled for real users.",
+    });
+  }
   const user = getSessionUser();
   const result = dispatchStaticRequest({
     method: (init?.method ?? "GET").toUpperCase(),
@@ -111,7 +127,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   try {
     const res = await fetch(path, {
       ...init,
-      headers: withHeaders(init),
+      headers: await withHeaders(init),
       credentials: "same-origin",
     });
     if (res.status === 204) return { skipped: true } as T;

@@ -10,14 +10,18 @@ import {
   getSessionUser,
   isAuthenticated,
   redeemContentInvite,
-  setCloudSession,
   setDevRole,
   signOutLocal,
+  syncSessionFromSupabase,
   type SessionUser,
 } from "@/lib/auth";
 import { resolvePostAuthPath } from "@/lib/auth-flow";
 import { seedDemoProfile } from "@/lib/demo-seed";
 import { apiFetch } from "@/lib/api-fetch";
+import {
+  isCloudAuthRequired,
+  isContentInviteAllowed,
+} from "@/lib/production";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import { ROLES, type Role } from "@thrivelife/shared";
 import { friendlyError } from "@/lib/friendly-error";
@@ -48,6 +52,9 @@ export function AuthPage() {
   const [redeeming, setRedeeming] = useState(false);
   const next = params.get("next");
   const denied = params.get("denied");
+  const cloudRequired = isCloudAuthRequired();
+  const inviteAllowed = isContentInviteAllowed();
+  const showDemoTools = !cloudRequired;
 
   useEffect(() => {
     setMode(params.get("mode") === "sign-up" ? "sign-up" : "sign-in");
@@ -55,6 +62,16 @@ export function AuthPage() {
       setContentOpen(true);
     }
   }, [params]);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    void syncSessionFromSupabase().then((session) => {
+      if (session) {
+        setUser(session);
+        setSignedIn(true);
+      }
+    });
+  }, []);
 
   function refreshUser() {
     setUser(getSessionUser());
@@ -98,13 +115,7 @@ export function AuthPage() {
         }
         const sessionUser = data.user;
         if (sessionUser) {
-          setCloudSession({
-            id: sessionUser.id,
-            email: sessionUser.email ?? email,
-            displayName:
-              (sessionUser.user_metadata?.display_name as string | undefined) ||
-              email.split("@")[0],
-          });
+          await syncSessionFromSupabase();
         }
         toast("Signed in.");
         refreshUser();
@@ -203,9 +214,22 @@ export function AuthPage() {
       <PageHeader
         eyebrow="Account"
         title={mode === "sign-in" ? "Sign in" : "Create account"}
-        description="Sign in to open your dashboard. Content contributors use the invite section below."
+        description={
+          cloudRequired
+            ? "Create an account or sign in to use ThriveLife. Your data is tied to your signed-in identity."
+            : "Sign in to open your dashboard. Demo and content-invite tools are available when cloud Auth is optional."
+        }
       />
 
+      {cloudRequired && !supabaseConfigured ? (
+        <p
+          className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
+          role="alert"
+        >
+          Production Auth is not configured. Set VITE_SUPABASE_URL and
+          VITE_SUPABASE_PUBLISHABLE_KEY, then redeploy.
+        </p>
+      ) : null}
       {denied ? (
         <p
           className="rounded-lg border border-border bg-warn-soft px-4 py-3 text-sm text-fixture"
@@ -298,7 +322,7 @@ export function AuthPage() {
         </form>
       ) : null}
 
-      {!signedIn && !supabaseConfigured ? (
+      {!signedIn && !supabaseConfigured && showDemoTools ? (
         <Card className="space-y-2">
           <p className="text-sm leading-relaxed text-muted-foreground">
             Cloud Auth is not configured here. Members use Demo tools; Joel uses
@@ -316,6 +340,7 @@ export function AuthPage() {
         </Card>
       ) : null}
 
+      {inviteAllowed ? (
       <details
         className="rounded-xl border border-border bg-white px-4 py-3"
         open={contentOpen}
@@ -367,7 +392,15 @@ export function AuthPage() {
           </p>
         </div>
       </details>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Content editors: ask an admin to set your{" "}
+          <code className="text-xs">profiles.role</code> to editor or admin in
+          Supabase.
+        </p>
+      )}
 
+      {showDemoTools ? (
       <details
         className="rounded-xl border border-border bg-white px-4 py-3"
         open={demoOpen}
@@ -433,6 +466,7 @@ export function AuthPage() {
           ) : null}
         </div>
       </details>
+      ) : null}
 
       <p className="text-xs text-muted-foreground">
         By continuing you agree to the{" "}

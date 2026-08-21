@@ -41,13 +41,15 @@ import {
 import {
   CONTENT_ACCESS_COOKIE,
   DEV_ROLE_COOKIE,
-  emailFromRequest,
   readJsonBody,
   sendJson,
   timezoneFromRequest,
-  userIdFromRequest,
 } from "./http";
 import { inviteCodeMatches } from "./content-invite";
+import {
+  requireJwtAuth,
+  resolveRequestIdentity,
+} from "./request-identity";
 import { persistNotificationToCloud, scheduleCloudPersist, deleteSessionMirrorsForUser } from "./cloud-persist";
 import { sendMail } from "./mailer";
 
@@ -396,6 +398,14 @@ export async function handleMemberApi(
   const method = (req.method ?? "GET").toUpperCase();
 
   if (pathname === "/api/auth/content-invite" && method === "POST") {
+    if (requireJwtAuth()) {
+      sendJson(res, 403, {
+        error: "invite_disabled",
+        message:
+          "Content invite codes are disabled in production. Ask an admin to set your profiles.role to editor or admin.",
+      });
+      return true;
+    }
     const body = await readBody(req);
     const code = typeof body.code === "string" ? body.code : "";
     if (!inviteCodeMatches(code)) {
@@ -433,14 +443,23 @@ export async function handleMemberApi(
   }
 
   if (!pathname.startsWith("/api/me")) return false;
-  const userId = userIdFromRequest(req);
+  const identity = await resolveRequestIdentity(req);
+  if (requireJwtAuth() && identity.source !== "jwt") {
+    sendJson(res, 401, {
+      error: "unauthorized",
+      message: "Sign in with Supabase Auth to use member APIs.",
+    });
+    return true;
+  }
+  const userId = identity.userId;
   const timezone = timezoneFromRequest(req);
+  const memberEmail = identity.email;
 
   try {
     if (pathname === "/api/me/dashboard" && method === "GET") {
       const progress = readMemberRuntime().onboarding.find((o) => o.userId === userId);
       const due = progress ? dueFullAssessmentPrompts(progress) : [];
-      const reminders = await processDueReminders(userId, emailFromRequest(req));
+      const reminders = await processDueReminders(userId, memberEmail);
       sendJson(res, 200, {
         ...buildDashboard(userId),
         reminderDispatch: reminders,
@@ -459,7 +478,7 @@ export async function handleMemberApi(
       const nowIso = typeof body.nowIso === "string" ? body.nowIso : undefined;
       const reminders = await processDueReminders(
         userId,
-        emailFromRequest(req),
+        memberEmail,
         nowIso,
       );
       sendJson(res, 200, reminders);
