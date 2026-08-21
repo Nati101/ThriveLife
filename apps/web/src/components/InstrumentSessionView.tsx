@@ -29,6 +29,8 @@ import {
   BatteryStateBadge,
   ScanMarkerBadge,
 } from "@/components/BatteryVisual";
+import { friendlyError } from "@/lib/friendly-error";
+import { useToast } from "@/components/Toast";
 
 function bandLabel(status: string, band?: string): string {
   if (status !== "ok" || !band) return "Not enough answers";
@@ -94,6 +96,7 @@ export function InstrumentSessionView({
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [followUps, setFollowUps] = useState<Record<string, boolean>>({});
   const [index, setIndex] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +109,7 @@ export function InstrumentSessionView({
         setError(null);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load instrument");
+          setError(friendlyError(err, "Could not load this assessment"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -150,8 +153,10 @@ export function InstrumentSessionView({
       const payload = (err as { payload?: { message?: string; error?: string } })
         .payload;
       setError(
-        payload?.message ??
-          (err instanceof Error ? err.message : "Could not start session"),
+        friendlyError(
+          err,
+          payload?.message ?? "Could not start session",
+        ),
       );
     } finally {
       setSaving(false);
@@ -171,7 +176,7 @@ export function InstrumentSessionView({
       ]);
       setResponses(saved.responses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(friendlyError(err, "Could not save answer"));
     } finally {
       setSaving(false);
     }
@@ -217,8 +222,9 @@ export function InstrumentSessionView({
       const completed = await completeAssessmentSession(session.id, extra);
       setResult(completed);
       setSession((completed.session as AssessmentSession) ?? session);
+      toast("Saved — your dashboard can use these results.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Complete failed");
+      setError(friendlyError(err, "Could not complete assessment"));
     } finally {
       setSaving(false);
     }

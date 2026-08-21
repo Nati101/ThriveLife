@@ -1,46 +1,68 @@
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/PageHeader";
 import { SupportFooter } from "@/components/SupportFooter";
+import { Card } from "@/components/ui/card";
 
 export function TermsPage() {
   return (
-    <article className="max-w-2xl space-y-6">
+    <article className="mx-auto max-w-2xl space-y-6">
       <PageHeader
-        eyebrow="Legal · DRAFT"
         title="Terms of use"
-        description="Placeholder copy pending Joel and legal counsel. Not a contract."
+        description="How to use ThriveLife responsibly. This surface is product-ready; counsel sign-off is still pending."
       />
-      <div className="rounded-xl border border-amber-200 bg-warn-soft px-4 py-3 text-sm text-fixture">
-        DRAFT — required in-app surface only. Do not present this as binding
-        terms until legal has signed off.
-      </div>
-      <div className="space-y-4 text-sm leading-relaxed text-foreground">
+
+      <Card className="space-y-4 text-sm leading-relaxed text-foreground">
+        <h2 className="text-lg font-semibold text-gray-800">What ThriveLife is</h2>
         <p>
-          ThriveLife is not a diagnosis, treatment, or emergency service. It
-          does not replace a qualified professional. If you are in immediate
-          danger, use local emergency services.
+          A capacity-navigation and self-reflection tool. It is not a diagnosis,
+          treatment, or emergency service. It does not replace a qualified
+          professional. If you are in immediate danger, use local emergency
+          services.
         </p>
+      </Card>
+
+      <Card className="space-y-4 text-sm leading-relaxed text-foreground">
+        <h2 className="text-lg font-semibold text-gray-800">Who it is for</h2>
         <p>
-          Version 1 uses fixture assessment wording until Joel’s item bank,
-          recharge library, and interpretation copy replace it. Scores are
-          provisional expert-judgment thresholds, not validated psychometric
-          claims.
+          Adults 18 and older. Teen accounts, workplace teams, and coaching
+          pathways are out of Version 1.
         </p>
+      </Card>
+
+      <Card className="space-y-4 text-sm leading-relaxed text-foreground">
+        <h2 className="text-lg font-semibold text-gray-800">Content status</h2>
         <p>
-          Accounts are for adults 18+. See the{" "}
+          Version 1 may show fixture assessment wording until Joel’s item bank,
+          recharge library, and interpretation copy replace it. Thresholds are
+          provisional expert judgment — not validated psychometric claims.
+        </p>
+      </Card>
+
+      <Card className="space-y-4 text-sm leading-relaxed text-foreground">
+        <h2 className="text-lg font-semibold text-gray-800">Related</h2>
+        <p>
+          See the{" "}
           <Link
             to="/privacy-policy"
             className="font-medium text-primary underline-offset-2 hover:underline"
           >
-            privacy policy (draft)
+            privacy policy
           </Link>{" "}
           and{" "}
-          <Link to="/support" className="font-medium text-primary underline-offset-2 hover:underline">
+          <Link
+            to="/support"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
             always-available support
           </Link>
           .
         </p>
-      </div>
+      </Card>
+
+      <p className="text-xs text-muted-foreground">
+        Pending counsel review. Not a binding contract until legal has signed
+        off.
+      </p>
       <SupportFooter />
     </article>
   );

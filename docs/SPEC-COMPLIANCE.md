@@ -1,6 +1,6 @@
 # ThriveLife — Spec compliance (Developer Specification v1.0)
 
-**Date:** 2026-08-18  
+**Date:** 2026-08-21  
 **Against:** Developer Specification v1.0 (July 2026)  
 **Runtime:** Vite + React web app; local JSON store for `npm run dev`; **dual-write to Supabase** (`session_mirrors` + content upsert) when `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` exist. Cloud: **Canada Central (`ca-central-1`)** project `ThriveLife` (`bpbfezmierdtproczkpj`).  
 **Visual:** [spec-compliance.canvas.tsx](/Users/nati/.cursor/projects/Users-nati-Documents-GitHub-ThriveLife/canvases/spec-compliance.canvas.tsx)
@@ -11,8 +11,8 @@ Fixture wording is allowed for V1 web beta. This is **not** clinical validation.
 
 | Grade | Count |
 |-------|-------|
-| Pass | 54 |
-| Partial | 10 |
+| Pass | 55 |
+| Partial | 9 |
 | Fail | 4 |
 | N/A (Joel/Legal/design) | 12 |
 
@@ -49,11 +49,11 @@ Listed rows below are the scored product requirements. Totals include the same s
 | 9.6 | No NLP on journal | Pass | Text stored only |
 | 9.7 | Age gate 18+ | Pass | Onboarding + `/auth` signup checkbox; no teen paths |
 | 9.9 | Export/delete/privacy toggles | Pass | `/privacy` |
-| 9.9 | Privacy policy / Terms surfaces | Partial | `/privacy-policy` and `/terms` are labeled **DRAFT**; PIPA/PIPEDA still Legal |
+| 9.9 | Privacy policy / Terms surfaces | Pass | `/privacy-policy` and `/terms` are product-layout pages with footer “pending counsel”; PIPA/PIPEDA still Legal |
 | 11.2 | Admin CRUD copy + draft/publish | Pass | `/admin/copy` + workflow POST; scoring from store |
 | 11.8 | Telemetry | Partial | Timestamps, N/A>15% flag, `/api/me/telemetry`; no Joel pilot dashboard |
 | 11.9 MVP list | Required V1 features | Pass | See product routes; deferred items stay out |
-| Auth | Real identity store | Partial | `/auth` Supabase; `/dev/role` **DEV-only** |
+| Auth | Real identity store | Partial | `/auth` Supabase when keys exist; **demo account via localStorage** for Pages; `/dev/role` DEV-only |
 | Hosting | Canada region | Pass | Cloud project `ca-central-1`; Legal confirm still needed before beta |
 | Joel content | Item bank, recharge library, result copy | Partial | Fixtures labeled `[FIXTURE]` |
 | Phase 10 | Expert review, interviews, pilot, legal docs | Fail | Joel/Legal-owned; not claimed |
@@ -69,7 +69,7 @@ Listed rows below are the scored product requirements. Totals include the same s
 ## Blocked (honest)
 
 - Joel’s terminology, item bank wording, recharge library, result/safety/notification copy.
-- Legal: finished privacy policy, Terms, Alberta PIPA/PIPEDA, cross-border confirmation. Draft pages are placeholders.
+- Legal: finished privacy policy, Terms, Alberta PIPA/PIPEDA, cross-border confirmation. In-app surfaces exist; counsel review still required.
 - Brand/design system.
 - Production email/push (Resend key not in this environment; SMTP client not shipped).
 - Normalized `assessment_sessions` rows for the local stub user (`stub-user-local` is not `auth.users` UUID). Dual-write uses `session_mirrors`.

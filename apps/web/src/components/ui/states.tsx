@@ -21,6 +21,10 @@ export function ErrorState({ message }: { message: string }) {
   );
 }
 
+export function SkeletonBlock({ className = "h-24 w-full" }: { className?: string }) {
+  return <div className={`skeleton ${className}`} aria-hidden />;
+}
+
 export function EmptyState({
   title,
   children,

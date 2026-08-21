@@ -51,7 +51,7 @@ export function PrivacyPage() {
                 ["notificationsEnabled", "Optional reminders"],
                 ["aiFeaturesEnabled", "AI features (none in V1 — control reserved)"],
                 ["anonymousAnalytics", "Anonymous usage analytics"],
-                ["futureTeamShare", "Future team share (stub)"],
+                ["futureTeamShare", "Future team share (reserved)"],
               ] as const
             ).map(([key, label]) => {
               const on = Boolean(settings[key]);
@@ -88,7 +88,7 @@ export function PrivacyPage() {
         <Button
           variant="outline"
           onClick={() => {
-            if (confirm("Delete all local ThriveLife data for this stub user?")) {
+            if (confirm("Delete all local ThriveLife data for this account?")) {
               void deleteMyData().then(() => setMessage("Deleted."));
             }
           }}
@@ -103,14 +103,14 @@ export function PrivacyPage() {
           to="/privacy-policy"
           className="font-medium text-primary underline-offset-2 hover:underline"
         >
-          privacy policy (DRAFT)
+          privacy policy
         </Link>{" "}
         and{" "}
         <Link to="/terms" className="font-medium text-primary underline-offset-2 hover:underline">
-          terms of use (DRAFT)
+          terms of use
         </Link>
-        . Alberta PIPA / PIPEDA review is still required. Hosting target: Canada
-        Central.
+        . Legal counsel review (Alberta PIPA / PIPEDA) is still pending. Hosting
+        target: Canada Central.
       </p>
       <SupportFooter />
     </div>

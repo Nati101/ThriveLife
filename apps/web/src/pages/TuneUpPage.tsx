@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input, Select, labelClassName } from "@/components/ui/field";
 import { EmptyState, ErrorState } from "@/components/ui/states";
+import { buttonClassName } from "@/components/ui/button-styles";
+import { Link } from "react-router-dom";
+import { useToast } from "@/components/Toast";
+import { friendlyError } from "@/lib/friendly-error";
 
 export function TuneUpPage() {
+  const { toast } = useToast();
   const [tuneUps, setTuneUps] = useState<Array<Record<string, unknown>>>([]);
   const [error, setError] = useState<string | null>(null);
   const [batteryId, setBatteryId] = useState("physical");
@@ -24,7 +29,7 @@ export function TuneUpPage() {
 
   useEffect(() => {
     void reload().catch((err: unknown) =>
-      setError(err instanceof Error ? err.message : "Failed to load"),
+      setError(friendlyError(err, "Could not load Tune-Ups")),
     );
   }, []);
 
@@ -47,9 +52,12 @@ export function TuneUpPage() {
             supportAction,
             winDefinition,
           })
-            .then(() => reload())
+            .then(() => {
+              toast("Tune-Up started.");
+              return reload();
+            })
             .catch((err: unknown) =>
-              setError(err instanceof Error ? err.message : "Could not create"),
+              setError(friendlyError(err, "Could not create Tune-Up")),
             );
         }}
       >
@@ -122,7 +130,17 @@ export function TuneUpPage() {
       </form>
 
       {tuneUps.length === 0 ? (
-        <EmptyState title="No Tune-Up yet">
+        <EmptyState
+          title="No Tune-Up yet"
+          action={
+            <Link
+              to="/assessments/full-assessment"
+              className={buttonClassName({ size: "sm" })}
+            >
+              Take Full Assessment first
+            </Link>
+          }
+        >
           Start one after a Full Assessment. One battery at a time.
         </EmptyState>
       ) : (

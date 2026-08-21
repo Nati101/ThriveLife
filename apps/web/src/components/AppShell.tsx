@@ -11,25 +11,25 @@ import {
   X,
   UserRound,
   HeartHandshake,
+  LineChart,
 } from "lucide-react";
 import {
   getSessionUser,
   roleLabel,
   userCanAccessContentTools,
 } from "@/lib/auth";
-import { FixtureNote } from "@/components/FixtureBanner";
+import { fetchOnboarding } from "@/lib/member-api";
+import { PageEnter } from "@/components/PageEnter";
 
 const LOGO_URL =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dd5a726e4_ChatGPTImageAug18202508_03_05PM.png";
 
-const memberLinks = [
-  { href: "/", label: "Home", icon: Home, end: true },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/check-in", label: "Check-in", icon: ClipboardCheck },
-  { href: "/assessments", label: "Assessments", icon: BarChart3 },
-  { href: "/onboarding", label: "Onboarding", icon: BookOpen },
-  { href: "/support", label: "Support", icon: HeartHandshake },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof Home;
+  end?: boolean;
+};
 
 function isActivePath(pathname: string, href: string, end?: boolean) {
   if (end || href === "/") return pathname === href;
@@ -41,15 +41,40 @@ export function AppShell() {
   const showAdmin = userCanAccessContentTools();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const navItems = [
+  useEffect(() => {
+    void fetchOnboarding()
+      .then((row) => {
+        const progress = row.progress;
+        setOnboardingDone(
+          Boolean(progress.completedAt) ||
+            (typeof progress.step === "number" && progress.step >= 8),
+        );
+      })
+      .catch(() => setOnboardingDone(false));
+  }, [location.pathname]);
+
+  const memberLinks: NavItem[] = [
+    { href: "/", label: "Home", icon: Home, end: true },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/check-in", label: "Check-in", icon: ClipboardCheck },
+    { href: "/assessments", label: "Assessments", icon: BarChart3 },
+    { href: "/progress", label: "Progress", icon: LineChart },
+    ...(!onboardingDone
+      ? ([{ href: "/onboarding", label: "Onboarding", icon: BookOpen }] as NavItem[])
+      : []),
+    { href: "/support", label: "Support", icon: HeartHandshake },
+  ];
+
+  const navItems: NavItem[] = [
     ...memberLinks,
     ...(showAdmin
-      ? ([{ href: "/admin", label: "Admin", icon: Settings }] as const)
+      ? ([{ href: "/admin", label: "Admin", icon: Settings }] as NavItem[])
       : []),
   ];
 
@@ -70,9 +95,8 @@ export function AppShell() {
               <div>
                 <h1 className="text-xl font-bold text-gray-800">ThriveLife</h1>
                 <p className="text-xs text-muted-foreground">
-                  Wellness Platform
+                  Capacity navigation
                 </p>
-                <FixtureNote />
               </div>
             </Link>
           </div>
@@ -84,7 +108,7 @@ export function AppShell() {
                 const active = isActivePath(
                   location.pathname,
                   item.href,
-                  "end" in item ? item.end : false,
+                  item.end,
                 );
                 return (
                   <li key={item.href}>
@@ -116,6 +140,7 @@ export function AppShell() {
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {roleLabel(user.role)}
+                  {user.isDemo ? " · demo" : ""}
                 </p>
               </div>
             </div>
@@ -123,7 +148,13 @@ export function AppShell() {
               to="/auth"
               className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
             >
-              Sign in
+              {user.isDemo ? "Account" : "Sign in"}
+            </Link>
+            <Link
+              to="/privacy"
+              className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
+            >
+              Privacy controls
             </Link>
             {import.meta.env.DEV ? (
               <Link
@@ -132,14 +163,7 @@ export function AppShell() {
               >
                 Switch local role
               </Link>
-            ) : (
-              <Link
-                to="/privacy"
-                className="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-gray-100 hover:text-foreground"
-              >
-                Privacy controls
-              </Link>
-            )}
+            ) : null}
           </div>
         </aside>
 
@@ -173,10 +197,7 @@ export function AppShell() {
               />
               <div className="fixed bottom-0 left-0 top-0 z-50 flex w-64 max-w-[85vw] flex-col bg-white shadow-xl md:hidden">
                 <div className="flex items-center justify-between border-b px-4 py-4">
-                  <div>
-                    <p className="font-bold text-gray-800">ThriveLife</p>
-                    <FixtureNote />
-                  </div>
+                  <p className="font-bold text-gray-800">ThriveLife</p>
                   <button
                     type="button"
                     className="min-h-11 min-w-11 rounded-lg p-2 text-muted-foreground hover:bg-gray-100"
@@ -193,7 +214,7 @@ export function AppShell() {
                       const active = isActivePath(
                         location.pathname,
                         item.href,
-                        "end" in item ? item.end : false,
+                        item.end,
                       );
                       return (
                         <li key={item.href}>
@@ -211,27 +232,24 @@ export function AppShell() {
                         </li>
                       );
                     })}
-                    {import.meta.env.DEV ? (
-                      <li>
-                        <Link
-                          to="/dev/role"
-                          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
-                        >
-                          <UserRound size={20} />
-                          <span>Switch role</span>
-                        </Link>
-                      </li>
-                    ) : (
-                      <li>
-                        <Link
-                          to="/privacy"
-                          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
-                        >
-                          <UserRound size={20} />
-                          <span>Privacy</span>
-                        </Link>
-                      </li>
-                    )}
+                    <li>
+                      <Link
+                        to="/auth"
+                        className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
+                      >
+                        <UserRound size={20} />
+                        <span>{user.isDemo ? "Account" : "Sign in"}</span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        to="/privacy"
+                        className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground hover:bg-gray-100"
+                      >
+                        <UserRound size={20} />
+                        <span>Privacy</span>
+                      </Link>
+                    </li>
                   </ul>
                 </nav>
                 <div className="border-t p-4">
@@ -255,9 +273,11 @@ export function AppShell() {
 
           <main id="main" className="relative min-w-0 flex-1 overflow-auto">
             <div className="mx-auto max-w-7xl p-4 pb-16 md:p-8">
-              <Outlet />
+              <PageEnter>
+                <Outlet />
+              </PageEnter>
             </div>
-            <footer className="mx-auto max-w-7xl px-4 pb-10 text-sm text-muted-foreground md:px-8">
+            <footer className="mx-auto max-w-7xl space-y-2 px-4 pb-10 text-sm text-muted-foreground md:px-8">
               <p>
                 ThriveLife is a capacity-navigation tool, not a diagnosis or
                 emergency service.{" "}
@@ -279,15 +299,20 @@ export function AppShell() {
                   to="/privacy-policy"
                   className="font-medium text-primary underline-offset-2 hover:underline"
                 >
-                  Privacy policy (draft)
+                  Privacy policy
                 </Link>
                 {" · "}
                 <Link
                   to="/terms"
                   className="font-medium text-primary underline-offset-2 hover:underline"
                 >
-                  Terms (draft)
+                  Terms
                 </Link>
+              </p>
+              <p className="text-xs">
+                Assessment wording is fixture content pending Joel’s package.
+                Privacy policy and Terms await legal counsel (Alberta PIPA /
+                PIPEDA) before beta.
               </p>
             </footer>
           </main>

@@ -1,11 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("privacy policy and terms are in-app DRAFT surfaces", async ({ page }) => {
+test("privacy policy and terms are product surfaces with counsel pending", async ({
+  page,
+}) => {
   await page.goto("/privacy-policy");
   await expect(page.getByRole("heading", { name: "Privacy policy" })).toBeVisible();
-  await expect(page.getByText("DRAFT", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("Pending counsel", { exact: false }).first()).toBeVisible();
   await page.goto("/terms");
   await expect(page.getByRole("heading", { name: "Terms of use" })).toBeVisible();
+  await expect(page.getByText("Pending counsel", { exact: false }).first()).toBeVisible();
 });
 
 test("admin content API returns 403 for a member role", async ({ request }) => {
@@ -15,6 +18,13 @@ test("admin content API returns 403 for a member role", async ({ request }) => {
   expect(res.status()).toBe(403);
   const body = (await res.json()) as { error?: string };
   expect(body.error).toBe("forbidden");
+});
+
+test("home offers onboarding and demo entry points", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("ThriveLife").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Start onboarding/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Load demo profile/i })).toBeVisible();
 });
 
 test("start Full Assessment, complete via API, see dashboard rings", async ({

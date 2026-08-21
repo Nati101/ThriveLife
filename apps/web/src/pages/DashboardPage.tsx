@@ -11,6 +11,7 @@ import {
   BatteryStateBadge,
   ScanMarkerBadge,
 } from "@/components/BatteryVisual";
+import { friendlyError } from "@/lib/friendly-error";
 import type { BatteryState } from "@thrivelife/shared";
 
 type Ring = {
@@ -47,6 +48,12 @@ function durationCopy(tier: string) {
   }
 }
 
+function reminderTitle(kinds: string[]): string {
+  if (kinds.includes("day7")) return "Day 7 — Full Assessment still optional";
+  if (kinds.includes("day3")) return "Day 3 — Full Assessment still optional";
+  return "Full Assessment is still optional";
+}
+
 export function DashboardPage() {
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,16 +61,20 @@ export function DashboardPage() {
   useEffect(() => {
     void fetchDashboard()
       .then((row) => setData(row))
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Failed to load dashboard"),
-      );
+      .catch((err: unknown) => setError(friendlyError(err, "Could not load dashboard")));
   }, []);
 
   if (error) {
     return <ErrorState message={error} />;
   }
   if (!data) {
-    return <LoadingState label="Loading dashboard…" />;
+    return (
+      <div className="space-y-4">
+        <div className="skeleton h-10 w-64" />
+        <div className="skeleton h-24 w-full" />
+        <LoadingState label="Loading dashboard…" />
+      </div>
+    );
   }
 
   const authority = data.authority as {
@@ -102,8 +113,22 @@ export function DashboardPage() {
   const escalation = data.escalation as { tier: 1 | 2 | null; message: string | null };
   const copy = data.copy as { safety?: { body: string } | null };
   const reminders = data.reminders as { due?: string[] } | undefined;
+  const onboarding = data.onboarding as {
+    completedAt: string | null;
+    declinedFullAssessmentAt: string | null;
+  } | null;
   const preferredIsB = elements.todayRecharge.preferredPlan === "plan_b";
   const modeValue = authority.declaredDrivingMode.value;
+
+  const hasFaRings = authority.batteryRings.some(
+    (r) => r.status === "ok" && r.value != null,
+  );
+  const hasScan = authority.scanMarkers.some(
+    (m) => m.status === "ok" && m.value != null,
+  );
+  const guidedEmpty = !hasFaRings && !hasScan;
+  const dueReminders = reminders?.due ?? [];
+  const declinedFa = Boolean(onboarding?.declinedFullAssessmentAt) && !hasFaRings;
 
   return (
     <div className="space-y-8">
@@ -129,9 +154,37 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {reminders?.due && reminders.due.length > 0 ? (
-        <Card>
-          <CardTitle className="text-lg">Full Assessment is still optional</CardTitle>
+      {guidedEmpty ? (
+        <Card className="card-reveal border-l-4 border-l-primary">
+          <CardTitle className="text-xl">Your dashboard is ready when you are</CardTitle>
+          <CardDescription>
+            Start with a 45-second Battery Scan for today’s recharge, or take the
+            Full Assessment (~9 minutes) for seven-battery rings. Nothing here is
+            blank forever — pick one next step.
+          </CardDescription>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link to="/assessments/battery-scan" className={buttonClassName()}>
+              Take Battery Scan
+            </Link>
+            <Link
+              to="/assessments/full-assessment"
+              className={buttonClassName({ variant: "outline" })}
+            >
+              Take Full Assessment
+            </Link>
+            <Link
+              to="/onboarding"
+              className={buttonClassName({ variant: "ghost" })}
+            >
+              Resume onboarding
+            </Link>
+          </div>
+        </Card>
+      ) : null}
+
+      {dueReminders.length > 0 ? (
+        <Card className="card-reveal">
+          <CardTitle className="text-lg">{reminderTitle(dueReminders)}</CardTitle>
           <CardDescription>
             You skipped it during onboarding. About nine minutes fills in the
             seven-battery dashboard. Nothing is lost if today is not the day.
@@ -143,10 +196,24 @@ export function DashboardPage() {
             Take Full Assessment
           </Link>
         </Card>
+      ) : declinedFa ? (
+        <Card className="card-reveal">
+          <CardTitle className="text-lg">Full Assessment waiting in the wings</CardTitle>
+          <CardDescription>
+            You declined it for now. We’ll gently re-prompt on Day 3 and Day 7.
+            You can take it anytime — rings unlock the deeper dashboard.
+          </CardDescription>
+          <Link
+            to="/assessments/full-assessment"
+            className={`${buttonClassName({ size: "sm" })} mt-4`}
+          >
+            Take it when ready
+          </Link>
+        </Card>
       ) : null}
 
       {authority.conflictNote ? (
-        <Card>
+        <Card className="card-reveal">
           <p className="text-sm leading-relaxed text-foreground">
             {authority.conflictNote}
           </p>
@@ -154,7 +221,7 @@ export function DashboardPage() {
       ) : null}
 
       {escalation.message ? (
-        <Card>
+        <Card className="card-reveal">
           <CardTitle className="text-lg">Extra support, if you want it</CardTitle>
           <CardDescription>{escalation.message}</CardDescription>
           <Link to="/support" className={`${buttonClassName({ variant: "outline", size: "sm" })} mt-4`}>
@@ -164,49 +231,59 @@ export function DashboardPage() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
+        <Card className="card-reveal">
           <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Most depleted
           </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.mostDepletedBatteryId
               ? names[elements.mostDepletedBatteryId]
-              : "Take the Full Assessment to see this."}
+              : "Waiting on Full Assessment"}
           </p>
+          {!elements.mostDepletedBatteryId ? (
+            <Link
+              to="/assessments/full-assessment"
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Fill in seven rings
+            </Link>
+          ) : null}
         </Card>
-        <Card>
+        <Card className="card-reveal card-reveal-delay-1">
           <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Stabilizing start
           </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.mostStabilizingBatteryId
               ? names[elements.mostStabilizingBatteryId]
-              : "Physical or Daily Rhythms when those read Low."}
+              : "Physical or Daily Rhythms when those read Low"}
           </p>
         </Card>
-        <Card>
+        <Card className="card-reveal card-reveal-delay-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Strongest support
           </p>
           <p className="mt-2 text-xl font-semibold text-gray-800">
             {elements.strongestSupportBatteryId
               ? names[elements.strongestSupportBatteryId]
-              : "Appears after a Full Assessment with stable capacity and recharge skill."}
+              : "Appears after a Full Assessment with steady capacity"}
           </p>
         </Card>
-        <Card>
+        <Card className="card-reveal card-reveal-delay-3">
           <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Overcharge flag
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {authority.overchargeFlag.value?.isFlagged
               ? "Your results may suggest that one area is being sustained by drawing heavily from other batteries."
-              : "No overcharge observation on the latest Full Assessment."}
+              : hasFaRings
+                ? "No overcharge observation on the latest Full Assessment."
+                : "Shown after a Full Assessment when relevant — never as an alarm."}
           </p>
         </Card>
       </div>
 
-      <Card className="border-l-4 border-l-primary">
+      <Card className="card-reveal border-l-4 border-l-primary">
         <CardTitle className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
           Today’s recharge — one action
@@ -256,23 +333,36 @@ export function DashboardPage() {
             ) : null}
           </>
         ) : (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {elements.todayRecharge.prompt ??
-              "Complete a Battery Scan to match a recharge."}
-          </p>
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {elements.todayRecharge.prompt ??
+                "Complete a Battery Scan to match a recharge for today."}
+            </p>
+            <Link to="/assessments/battery-scan" className={buttonClassName()}>
+              Start Battery Scan
+            </Link>
+          </div>
         )}
-        <div className="mt-4">
-          <Link
-            to="/assessments/battery-scan"
-            className={buttonClassName({ variant: "outline" })}
-          >
-            Battery Scan
-          </Link>
-        </div>
+        {elements.todayRecharge.action ? (
+          <div className="mt-4">
+            <Link
+              to="/assessments/battery-scan"
+              className={buttonClassName({ variant: "outline" })}
+            >
+              Rescan batteries
+            </Link>
+          </div>
+        ) : null}
       </Card>
 
       <section>
         <h2 className="mb-3 text-xl font-semibold text-gray-700">Life Batteries</h2>
+        {!hasFaRings && !guidedEmpty ? (
+          <p className="mb-3 text-sm text-muted-foreground">
+            Rings appear after a Full Assessment. Scan markers update from today’s
+            Battery Scan.
+          </p>
+        ) : null}
         <ul className="grid gap-3 sm:grid-cols-2">
           {batteries.map((battery) => {
             const ring = authority.batteryRings.find((r) => r.batteryId === battery.id);
@@ -308,6 +398,17 @@ export function DashboardPage() {
         <span className="font-medium capitalize text-gray-800">
           {modeValue ?? "not declared"}
         </span>
+        {!modeValue ? (
+          <>
+            {" · "}
+            <Link
+              to="/assessments/weekly-mode-check"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Set mode
+            </Link>
+          </>
+        ) : null}
       </p>
 
       <div className="flex flex-wrap gap-3">

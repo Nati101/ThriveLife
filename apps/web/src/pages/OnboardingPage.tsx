@@ -9,6 +9,8 @@ import { buttonClassName } from "@/components/ui/button-styles";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/field";
 import { StepDots } from "@/components/ui/progress";
+import { useToast } from "@/components/Toast";
+import { friendlyError } from "@/lib/friendly-error";
 
 const CONTEXT_FIELDS = [
   { key: "season", label: "What season of life are you in?" },
@@ -32,12 +34,14 @@ const STEP_TITLES = [
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [context, setContext] = useState<Record<string, string>>({});
   const [contextIndex, setContextIndex] = useState(0);
   const [ageOk, setAgeOk] = useState(false);
   const [consentOk, setConsentOk] = useState(false);
   const [batteries, setBatteries] = useState<BatteryDefinition[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchOnboarding().then((row) => {
@@ -60,7 +64,11 @@ export function OnboardingPage() {
 
   async function go(next: number, extra?: Record<string, unknown>) {
     setStep(next);
-    await saveOnboarding({ step: next, contextAnswers: context, ...extra });
+    try {
+      await saveOnboarding({ step: next, contextAnswers: context, ...extra });
+    } catch (err) {
+      setError(friendlyError(err, "Could not save onboarding progress"));
+    }
   }
 
   const contextField = CONTEXT_FIELDS[contextIndex];
@@ -73,6 +81,7 @@ export function OnboardingPage() {
         description="A successful recharge comes before the nine-minute Full Assessment."
       />
       <StepDots current={step} total={8} label={`Step ${step} of 8`} />
+      {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
       {step === 1 ? (
         <Card>
@@ -242,21 +251,31 @@ export function OnboardingPage() {
       {step === 8 ? (
         <Card>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Full dashboard and plan when the assessment is complete. Tune-Up still
-            requires a Full Assessment.
+            You are set. Open the dashboard for rings (after Full Assessment),
+            today’s scan markers, Plan A/B, and mode. Day 3 and Day 7 soft
+            prompts appear if you skipped the Full Assessment.
           </p>
-          <Button
-            className="mt-5"
-            onClick={() => {
-              void saveOnboarding({
-                step: 8,
-                completedAt: new Date().toISOString(),
-              });
-              navigate("/dashboard");
-            }}
-          >
-            Open full dashboard
-          </Button>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                void saveOnboarding({
+                  step: 8,
+                  completedAt: new Date().toISOString(),
+                }).then(() => {
+                  toast("Onboarding complete.");
+                  navigate("/dashboard");
+                });
+              }}
+            >
+              Open full dashboard
+            </Button>
+            <Link
+              to="/assessments/battery-scan"
+              className={buttonClassName({ variant: "outline" })}
+            >
+              Or take a quick scan
+            </Link>
+          </div>
         </Card>
       ) : null}
 

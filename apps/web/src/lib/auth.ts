@@ -11,11 +11,13 @@ import {
 /** Cookie name for local role switching until real auth is wired. */
 export const DEV_ROLE_COOKIE = "tl_dev_role";
 
+const DEMO_USER_KEY = "thrivelife.demo.user.v1";
+
 /**
  * Auth path:
- * - Production: Supabase Auth (one identity store). Roles in `profiles.role`
- *   and JWT `app_metadata.role` — never `user_metadata`.
- * - Local/dev: cookie stub at /dev/role so RBAC can be tested without cloud.
+ * - Production: Supabase Auth when VITE keys exist.
+ * - Static / Pages demo: localStorage demo account (persists across reloads).
+ * - Local/dev: cookie role at /dev/role so RBAC can be tested without cloud.
  */
 export const AUTH_PROVIDER_PATH = "supabase_auth" as const;
 
@@ -25,7 +27,18 @@ export type SessionUser = {
   email: string;
   role: Role;
   ageVerified: boolean;
-  isStub: true;
+  /** True when using cookie/localStorage identity (not Supabase). */
+  isStub: boolean;
+  /** True when the user explicitly continued as a demo account. */
+  isDemo: boolean;
+};
+
+type StoredDemoUser = {
+  id: string;
+  displayName: string;
+  email: string;
+  role: Role;
+  ageVerified: boolean;
 };
 
 function readCookie(name: string): string | null {
@@ -36,10 +49,46 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : null;
 }
 
-export function getSessionUser(): SessionUser {
-  const raw = readCookie(DEV_ROLE_COOKIE);
-  const role: Role = raw && isRole(raw) ? raw : "user";
+function readStoredDemo(): StoredDemoUser | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DEMO_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredDemoUser>;
+    if (!parsed.id || !parsed.email || !parsed.displayName) return null;
+    const role = parsed.role && isRole(parsed.role) ? parsed.role : "user";
+    return {
+      id: parsed.id,
+      displayName: parsed.displayName,
+      email: parsed.email,
+      role,
+      ageVerified: parsed.ageVerified !== false,
+    };
+  } catch {
+    return null;
+  }
+}
 
+function writeCookieRole(role: Role): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; SameSite=Lax; max-age=31536000`;
+}
+
+export function getSessionUser(): SessionUser {
+  const stored = readStoredDemo();
+  const cookieRaw = readCookie(DEV_ROLE_COOKIE);
+  const cookieRole = cookieRaw && isRole(cookieRaw) ? cookieRaw : null;
+
+  if (stored) {
+    return {
+      ...stored,
+      role: cookieRole ?? stored.role,
+      isStub: true,
+      isDemo: true,
+    };
+  }
+
+  const role: Role = cookieRole ?? "user";
   return {
     id: "stub-user-local",
     displayName: "Local Pilot User",
@@ -47,11 +96,46 @@ export function getSessionUser(): SessionUser {
     role,
     ageVerified: true,
     isStub: true,
+    isDemo: false,
   };
 }
 
+/** Persist a demo identity for GitHub Pages / static hosts. */
+export function continueAsDemoAccount(options?: {
+  displayName?: string;
+  email?: string;
+  role?: Role;
+}): SessionUser {
+  const role = options?.role && isRole(options.role) ? options.role : "user";
+  const user: StoredDemoUser = {
+    id: "demo-user-local",
+    displayName: options?.displayName?.trim() || "Demo Member",
+    email: options?.email?.trim() || "demo@thrivelife.local",
+    role,
+    ageVerified: true,
+  };
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(user));
+  }
+  writeCookieRole(role);
+  return { ...user, isStub: true, isDemo: true };
+}
+
+export function clearDemoAccount(): void {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(DEMO_USER_KEY);
+  }
+}
+
 export function setDevRole(role: Role): void {
-  document.cookie = `${DEV_ROLE_COOKIE}=${encodeURIComponent(role)}; path=/; SameSite=Lax`;
+  writeCookieRole(role);
+  const stored = readStoredDemo();
+  if (stored && typeof localStorage !== "undefined") {
+    localStorage.setItem(
+      DEMO_USER_KEY,
+      JSON.stringify({ ...stored, role }),
+    );
+  }
 }
 
 export function roleLabel(role: Role): string {

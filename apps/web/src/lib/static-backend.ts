@@ -571,6 +571,16 @@ function buildDashboard(userId: string): Record<string, unknown> {
       notificationsEnabled:
         (runtime.privacyByUser[userId] ?? DEFAULT_PRIVACY_SETTINGS).notificationsEnabled,
     },
+    onboarding: onboarding
+      ? {
+          step: onboarding.step,
+          completedAt: onboarding.completedAt,
+          declinedFullAssessmentAt: onboarding.declinedFullAssessmentAt,
+          firstRechargeCompletedAt: onboarding.firstRechargeCompletedAt,
+          day3PromptedAt: onboarding.day3PromptedAt,
+          day7PromptedAt: onboarding.day7PromptedAt,
+        }
+      : null,
     staticHost: true,
   };
 }

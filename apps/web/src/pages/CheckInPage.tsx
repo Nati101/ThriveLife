@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   CHECK_IN_COMPLETION_LABELS,
   DRIVING_MODES,
@@ -13,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChoiceChip } from "@/components/ui/choice";
 import { Select, Textarea, labelClassName } from "@/components/ui/field";
+import { buttonClassName } from "@/components/ui/button-styles";
+import { useToast } from "@/components/Toast";
+import { friendlyError } from "@/lib/friendly-error";
 
 function durationLabel(tier: string) {
   switch (tier) {
@@ -32,6 +36,7 @@ function durationLabel(tier: string) {
 }
 
 export function CheckInPage() {
+  const { toast } = useToast();
   const [mode, setMode] = useState("");
   const [batteryId, setBatteryId] = useState("");
   const [recharge, setRecharge] = useState("");
@@ -70,11 +75,14 @@ export function CheckInPage() {
         completion,
         note: note.trim() || null,
       });
-      setMessage(
-        completion === "not_today" ? result.restartMessage : "Saved. That is enough for today.",
-      );
+      const nextMessage =
+        completion === "not_today"
+          ? result.restartMessage
+          : "Saved. That is enough for today.";
+      setMessage(nextMessage);
+      toast(nextMessage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(friendlyError(err, "Could not save check-in"));
     }
   }
 
@@ -198,9 +206,16 @@ export function CheckInPage() {
             {message}
           </p>
         ) : null}
-        <Button type="submit" disabled={!ready}>
-          Save check-in
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={!ready}>
+            Save check-in
+          </Button>
+          {message ? (
+            <Link to="/dashboard" className={buttonClassName({ variant: "outline" })}>
+              Back to dashboard
+            </Link>
+          ) : null}
+        </div>
       </form>
 
       {completion === "not_today" || message === RESTART_RAIL_MESSAGE ? (

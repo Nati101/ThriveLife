@@ -22,7 +22,7 @@ export function AdminPage() {
       <PageHeader
         eyebrow="Content tools"
         title="Admin hub"
-        description={`Signed in as stub ${roleLabel(user.role)}. Same web app — role-gated routes, not a separate admin deploy.`}
+        description={`Signed in as ${roleLabel(user.role)}. Same web app — role-gated routes, not a separate admin deploy.`}
       />
 
       <div className="mb-8 rounded-xl border border-border bg-white px-4 py-3 text-sm text-muted-foreground shadow-sm">
@@ -62,12 +62,26 @@ export function AdminPage() {
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground">
+        Switch role from{" "}
         <Link
-          to="/dev/role"
+          to="/auth"
           className="font-medium text-primary underline-offset-2 hover:underline"
         >
-          Switch local role
+          Account
         </Link>
+        {import.meta.env.DEV ? (
+          <>
+            {" "}
+            or{" "}
+            <Link
+              to="/dev/role"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              /dev/role
+            </Link>
+          </>
+        ) : null}
+        .
       </p>
     </div>
   );
