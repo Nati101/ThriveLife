@@ -28,6 +28,11 @@ import { friendlyError } from "@/lib/friendly-error";
 const LOGO_URL =
   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/dd5a726e4_ChatGPTImageAug18202508_03_05PM.png";
 
+function authRedirectUrl(): string {
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  return `${window.location.origin}${base}/auth`;
+}
+
 export function AuthPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -128,6 +133,7 @@ export function AuthPage() {
         password,
         options: {
           data: { display_name: email.split("@")[0] },
+          emailRedirectTo: authRedirectUrl(),
         },
       });
       if (signUpError) {

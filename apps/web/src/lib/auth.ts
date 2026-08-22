@@ -3,6 +3,7 @@ import {
   ROLE_PERMISSIONS,
   canAccessContentTools,
   hasPermission,
+  isBootstrapAdminEmail,
   isRole,
   type Permission,
   type Role,
@@ -112,15 +113,24 @@ export function inviteCodeMatches(code: string): boolean {
 }
 
 /**
- * Elevated roles only when DEV, content-access cookie, or stored contentOwner.
- * Prevents casual self-admin via cookie/header on static hosts.
+ * Elevated roles:
+ * - DEV / content-invite: allowed
+ * - Trusted cloud session (profiles.role from Supabase): allowed
+ * - Demo without invite: demoted to user (no self-admin)
  */
 function sanitizeRole(
   role: Role,
-  contentOwner: boolean,
+  opts: { contentOwner?: boolean; trustedCloud?: boolean } = {},
 ): Role {
   if (!canAccessContentTools(role)) return role;
-  if (import.meta.env.DEV || contentOwner || hasContentAccess()) return role;
+  if (
+    import.meta.env.DEV ||
+    opts.contentOwner ||
+    opts.trustedCloud ||
+    hasContentAccess()
+  ) {
+    return role;
+  }
   return "user";
 }
 
@@ -179,7 +189,7 @@ export function getSessionUser(): SessionUser {
 
   if (stored) {
     const contentOwner = stored.contentOwner === true;
-    const role = sanitizeRole(cookieRole ?? stored.role, contentOwner);
+    const role = sanitizeRole(cookieRole ?? stored.role, { contentOwner });
     return {
       ...stored,
       role,
@@ -192,7 +202,11 @@ export function getSessionUser(): SessionUser {
   const cloud = readCloudSession();
   if (cloud) {
     const contentOwner = cloud.contentOwner === true;
-    const role = sanitizeRole(cookieRole ?? cloud.role, contentOwner);
+    // Prefer profile role from cloud session; cookie may lag behind.
+    const role = sanitizeRole(cloud.role, {
+      contentOwner,
+      trustedCloud: true,
+    });
     return {
       ...cloud,
       role,
@@ -202,7 +216,7 @@ export function getSessionUser(): SessionUser {
     };
   }
 
-  const role = sanitizeRole(cookieRole ?? "user", false);
+  const role = sanitizeRole(cookieRole ?? "user", {});
   return {
     id: "stub-user-local",
     displayName: "Guest",
@@ -294,7 +308,7 @@ export function setCloudSession(options: {
       options.displayName?.trim() ||
       options.email.trim().split("@")[0] ||
       "Member",
-    role: sanitizeRole(role, false),
+    role: sanitizeRole(role, { trustedCloud: true }),
     ageVerified: true,
     contentOwner: false,
   };
@@ -342,6 +356,10 @@ export async function syncSessionFromSupabase(): Promise<SessionUser | null> {
     if (isRole(appRole)) role = appRole;
   }
 
+  if (isBootstrapAdminEmail(user.email ?? profile?.email) && role !== "admin") {
+    role = "admin";
+  }
+
   return setCloudSession({
     id: user.id,
     email: user.email ?? profile?.email ?? "member@thrivelife.local",
@@ -374,7 +392,8 @@ export function setDevRole(role: Role): void {
     readStoredDemo()?.contentOwner === true ||
     readCloudSession()?.contentOwner === true ||
     hasContentAccess();
-  const next = sanitizeRole(role, contentOwner);
+  const trustedCloud = readCloudSession() !== null;
+  const next = sanitizeRole(role, { contentOwner, trustedCloud });
   writeCookieRole(next);
   const stored = readStoredDemo();
   if (stored && typeof localStorage !== "undefined") {

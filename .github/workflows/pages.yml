@@ -27,11 +27,13 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: "true"
-          VITE_ALLOW_DEMO_AUTH: "true"
+          # Public signup/login — do not force demo mode when Supabase secrets exist.
           VITE_CONTENT_INVITE_CODE: ${{ secrets.CONTENT_INVITE_CODE }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ALLOW_DEMO_AUTH: ${{ secrets.VITE_ALLOW_DEMO_AUTH }}
+          VITE_APP_URL: https://nati101.github.io/ThriveLife
       - name: SPA fallback for client routes
         run: cp apps/web/dist/index.html apps/web/dist/404.html
       - uses: actions/configure-pages@v5

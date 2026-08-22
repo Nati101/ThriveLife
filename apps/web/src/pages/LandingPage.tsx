@@ -59,7 +59,7 @@ export function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link to="/auth?mode=sign-up" className={buttonClassName()}>
-              Get started
+              Create account
             </Link>
             <Link
               to="/auth"
@@ -69,7 +69,7 @@ export function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Ages 18+.
+            Free for adults 18+. Your profile stays private to your account.
           </p>
         </div>
       </section>

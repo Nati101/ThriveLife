@@ -1,6 +1,15 @@
 # Production deploy (real users)
 
-GitHub Pages is a **static demo** only. Real members need a Node host that serves the SPA and `/api` with **Supabase JWT verification**.
+Public signup/login uses **Supabase Auth**. GitHub Pages can host the SPA with Auth when Vite secrets are set. For durable multi-device member data, prefer the Node host (`npm run start`) with JWT verification.
+
+## Public accounts
+
+- Anyone can **Create account** / **Sign in** with email + password.
+- Profiles are created automatically (`private.handle_new_user`).
+- These emails become **admin** automatically (content tools + thresholds):
+
+  - `japukalo@gmail.com`
+  - `n.solomon1512@gmail.com`
 
 ## Architecture
 
@@ -33,56 +42,48 @@ Copy `.env.example` → `apps/web/.env.local` (or host secrets):
 | `TL_ALLOW_DEV_HEADERS` | **never in prod** | Would re-enable spoofable headers |
 | `VITE_ALLOW_DEMO_AUTH` | no | Set `true` only for fixture demos |
 
-Build-time client flags (Vite embeds them):
+## GitHub Pages (public SPA)
 
-| Variable | Notes |
-|----------|--------|
-| `VITE_SUPABASE_URL` | Required for production Auth UI |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable / anon — never service_role |
-| `VITE_ALLOW_DEMO_AUTH` | Omit / false so demo tools stay hidden in prod builds |
-| `VITE_BASE` | `/` for a custom domain host |
+Set repository secrets, then push / re-run the Pages workflow:
+
+| Secret | Purpose |
+|--------|---------|
+| `VITE_SUPABASE_URL` | `https://bpbfezmierdtproczkpj.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key from Supabase |
+| `VITE_SUPABASE_ANON_KEY` | Optional legacy anon JWT |
+
+In Supabase → Authentication → URL configuration:
+
+- **Site URL:** `https://nati101.github.io/ThriveLife/`
+- **Redirect URLs:** `https://nati101.github.io/ThriveLife/**`, `http://127.0.0.1:3000/**`
+
+For a smoother public beta, turn **Confirm email** off (or users must confirm before first login).
+
+Without those secrets, the login form stays visible but disabled.
 
 ## Run locally as production
 
 ```bash
 cp .env.example apps/web/.env.local
-# fill VITE_SUPABASE_* (and SUPABASE_* if different on server)
+# fill VITE_SUPABASE_* 
 
 npm run build
 npm run start
 # → http://127.0.0.1:8080
 ```
 
-In production mode:
-
-- `/api/me` and assessments require a valid Bearer token
-- Demo tools are hidden in the UI
-- Content invite codes are disabled (set Joel’s `profiles.role` to `admin` in Supabase)
-- Static `localStorage` API fallback is disabled
-
-## Give Joel content access (production)
-
-1. Joel signs up / signs in via `/auth`
-2. In Supabase Dashboard → Authentication → Users → Joel → set **App metadata**:
-   `{ "role": "admin" }`
-3. Or update `public.profiles.role` to `admin` / `editor`
-4. Joel refreshes session (sign out / in) and opens `/admin`
-
 ## Hosting checklist (Canada preference)
 
 - [ ] Deploy Node 20+ in or near Canada (`ca-central-1` already used for Supabase)
-- [ ] TLS termination + `PORT` from the platform
-- [ ] Secrets: Supabase URL + publishable key + (optional) service role
-- [ ] Confirm email templates / redirect URLs in Supabase Auth for your domain
-- [ ] Legal: counsel-signed Privacy + Terms before public beta (in-app pages are drafts)
-- [ ] Joel fixture replacement before claiming production content quality
-- [ ] Do **not** point real users at GitHub Pages for member data
+- [ ] TLS + secrets (URL + publishable key; optional service role)
+- [ ] Auth Site URL + redirect URLs for your domain
+- [ ] Legal counsel for Privacy/Terms before wide public beta
+- [ ] Joel content package before claiming production copy quality
 
-## Auth on GitHub Pages
+## Smoke test
 
-Pages can show email/password when these repo secrets are set for the Pages workflow:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`)
-
-Without them, the form is visible but disabled and demo stays under **More options**. Member data on Pages still uses browser storage until you deploy the Node host in this guide.
+1. Create account → onboarding → dashboard
+2. Sign out / sign in restores the same profile
+3. Second account does not see the first user’s data on the Node host
+4. Sign up with an admin email → Admin appears in the nav
+5. Regular members cannot open `/admin`

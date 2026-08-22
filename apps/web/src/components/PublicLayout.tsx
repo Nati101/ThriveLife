@@ -40,9 +40,9 @@ export function PublicLayout() {
                   >
                     Sign in
                   </Link>
-                  <Link to="/auth?mode=sign-up" className={buttonClassName()}>
-                    Get started
-                  </Link>
+                <Link to="/auth?mode=sign-up" className={buttonClassName()}>
+                  Create account
+                </Link>
                 </>
               )}
             </nav>
